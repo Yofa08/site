@@ -79,11 +79,9 @@
   .hero-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; font-size: 11px; }
   .hero-rating { color: var(--sub); }
   .hero-budget { color: #0f9d58; font-weight: 600; background: #e8f5e9; padding: 1px 7px; border-radius: 3px; }
-  .hero-creator { color: #6366f1; font-weight: 600; background: #eef2ff; padding: 1px 7px; border-radius: 3px; }
-  .hero-no-creator { color: #ef4444; font-size: 10px; background: #fef2f2; padding: 1px 7px; border-radius: 3px; font-style: italic; }
-  .hero-featured-badge { position: absolute; top: 10px; right: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; }
+  .hero-featured-badge { position: absolute; top: 10px; left: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; }
 
-  /* ── Influencer copy (hero + card shared) ── */
+  /* ── Influencer copy ── */
   .copy-toggle {
     width: 100%; padding: 5px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;
     font-size: 11px; color: var(--sub); cursor: pointer; margin-top: 6px; transition: .15s;
@@ -105,7 +103,6 @@
   .copy-box .copy-top-btn:hover { opacity: .85; }
   .copy-box .copy-top-btn.copied { background: #10b981; }
 
-  /* ── Section divider ── */
   .section-divider {
     max-width: 1200px; margin: 32px auto 12px; padding: 0 16px;
     font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 10px;
@@ -151,7 +148,7 @@
   .budget-tag { font-size: 12px; color: #0f9d58; font-weight: 700; background: #e8f5e9; padding: 3px 10px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
   .end-tag { font-size: 11px; color: #e67e22; font-weight: 600; background: #fff3e0; padding: 2px 8px; border-radius: 4px; }
 
-  /* Creator info ABOVE title — prominent */
+  /* CC info ABOVE title */
   .creator-row { font-size: 13px; font-weight: 700; color: #6366f1; padding: 3px 8px; border-radius: 4px; margin-bottom: 4px; background: #eef2ff; display: block; }
   .creator-row-id { font-size: 12px; font-weight: 700; color: #6366f1; padding: 2px 0; }
   .creator-row-no { font-size: 12px; font-weight: 600; color: #ef4444; font-style: italic; padding: 3px 0; }
@@ -166,7 +163,6 @@
   }
   .btn-amazon:hover { opacity: .92; transform: scale(1.01); }
 
-  /* ── Subscribe ── */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; justify-content: center; align-items: center; }
   .modal-overlay.open { display: flex; }
   .modal-box { background: var(--card); border-radius: 16px; padding: 32px; width: 400px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,.3); text-align: center; }
@@ -240,8 +236,8 @@
           {% if d.category_name %}<div class="hero-cat">{{ d.category_name }}</div>{% endif %}
 
           {% if d.creator_name %}
-          <div class="hero-creator-row">💰 {{ d.creator_name }}</div>
-          {% if d.creator_id %}<div class="hero-creator-row-id">🆔 CC ID：{{ d.creator_id }}</div>{% endif %}
+          <div class="hero-creator-row">CC：{{ d.creator_name }}</div>
+          {% if d.creator_id %}<div class="hero-creator-row-id">CC ID：{{ d.creator_id }}</div>{% endif %}
           {% else %}
           <div class="hero-creator-row-no">⚠ No commission program assigned</div>
           {% endif %}
@@ -265,9 +261,7 @@
         <button class="copy-toggle" onclick="toggleCopy(this)">📋 Copy for Influencer</button>
         <div class="copy-box">
           <button class="copy-top-btn" onclick="copyInfluencerText(this)" data-id="hero-{{ d.id }}">Copy</button>
-          <textarea readonly rows="10" id="infotext-hero-{{ d.id }}">{{ d.influencer_copy }}
-
-{{ d.influencer_hashtags }}</textarea>
+          <textarea readonly rows="10" id="infotext-hero-{{ d.id }}">{{ d.influencer_copy }}</textarea>
         </div>
       </div>
       {% endif %}
@@ -294,8 +288,8 @@
       {% if d.category_name %}<div class="card-cat">{{ d.category_name }}</div>{% endif %}
 
       {% if d.creator_name %}
-      <div class="creator-row">💰 {{ d.creator_name }}</div>
-      {% if d.creator_id %}<div class="creator-row-id">🆔 CC ID：{{ d.creator_id }}</div>{% endif %}
+      <div class="creator-row">CC：{{ d.creator_name }}</div>
+      {% if d.creator_id %}<div class="creator-row-id">CC ID：{{ d.creator_id }}</div>{% endif %}
       {% else %}
       <div class="creator-row-no">⚠ No commission program assigned</div>
       {% endif %}
@@ -330,9 +324,7 @@
       <button class="copy-toggle" onclick="toggleCopy(this)">📋 Copy for Influencer</button>
       <div class="copy-box">
         <button class="copy-top-btn" onclick="copyInfluencerText(this)" data-id="{{ d.id }}">Copy</button>
-        <textarea readonly rows="10" id="infotext-{{ d.id }}">{{ d.influencer_copy }}
-
-{{ d.influencer_hashtags }}</textarea>
+        <textarea readonly rows="10" id="infotext-{{ d.id }}">{{ d.influencer_copy }}</textarea>
       </div>
       {% endif %}
     </div>
@@ -345,7 +337,6 @@
 
 <footer>© {{ request.url.hostname }} — As an Amazon Associate we earn from qualifying purchases.</footer>
 
-<!-- Subscribe Modal -->
 <div class="modal-overlay" id="subscribeModal">
   <div class="modal-box">
     <h3>📬 Get Daily Deals</h3>
