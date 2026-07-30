@@ -69,7 +69,14 @@ def guess_field(col_name: str) -> Optional[str]:
         return ALIAS_TO_FIELD[paren.group(1).strip()]
     return None
 
-app = FastAPI(title="Deal Manager", version="1.0.0")
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(title="Deal Manager", version="1.2.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -209,11 +216,11 @@ def build_influencer_hashtags(deal: Merch) -> str:
     return " ".join(tags)
 
 
-# ── Startup ─────────────────────────────────────────────
+# ── Health ────────────────────────────────────────────
 
-@app.on_event("startup")
-def startup():
-    init_db()
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 # ═════════════════════════════════════════════════════════
