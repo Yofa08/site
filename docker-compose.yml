@@ -1,0 +1,36 @@
+# ── Deal Manager — Docker Compose ───────────────────────
+# Start:  docker compose up -d
+# Stop:   docker compose down
+
+services:
+  app:
+    build: .
+    container_name: deal-manager
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - ENV=prod
+      - DATABASE_URL=sqlite:////app/data/deals.db
+      - HOST=0.0.0.0
+      - PORT=8000
+    restart: unless-stopped
+
+  # ── Optional: PostgreSQL ──────────────────────────────
+  # Uncomment below and set DATABASE_URL in app:
+  #   DATABASE_URL=postgresql://dealuser:dealpass@db:5432/dealmanager
+  #
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: deal-db
+  #   environment:
+  #     POSTGRES_USER: dealuser
+  #     POSTGRES_PASSWORD: dealpass
+  #     POSTGRES_DB: dealmanager
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #
+  # volumes:
+  #   pgdata:

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — Deal Manager</title>
+<style>
+  :root { --bg: #f0f2f5; --card: #fff; --primary: #4361ee; --text: #1a1a2e; --sub: #6b7280;
+    --border: #e5e7eb; --red: #ef4444; --green: #10b981; --radius: 8px; --shadow: 0 1px 3px rgba(0,0,0,.08); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); }
+  nav { background:var(--card); border-bottom:1px solid var(--border); padding:0 24px; height:56px; display:flex; align-items:center; gap:24px; }
+  nav a { text-decoration:none; color:var(--sub); font-weight:500; font-size:14px; }
+  nav a.active { color:var(--primary); }
+  nav .brand { font-weight:700; font-size:16px; color:var(--text); margin-right:auto; }
+  .container { max-width:800px; margin:0 auto; padding:24px; }
+  .header { margin-bottom:20px; }
+  .header h1 { font-size:22px; font-weight:700; }
+  .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px; margin-bottom:20px; }
+  .card h3 { font-size:15px; font-weight:700; margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:.15s; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-primary:hover { opacity:.9; }
+  .btn-sm { padding:4px 10px; font-size:12px; }
+  .btn-ghost { background:none; color:var(--sub); border:1px solid var(--border); }
+  .btn-danger { color:var(--red); border-color:var(--red); background:none; }
+  .btn-danger:hover { background:#fef2f2; }
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; font-size:12px; font-weight:600; color:var(--sub); text-transform:uppercase; letter-spacing:.3px; margin-bottom:4px; }
+  .form-group input { width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit; }
+  .form-group input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(67,97,238,.1); }
+  .hint { font-size:11px; color:var(--sub); margin-top:4px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; padding:10px 12px; background:#fafbfc; border-bottom:1px solid var(--border); font-weight:600; color:var(--sub); font-size:12px; text-transform:uppercase; }
+  td { padding:10px 12px; border-bottom:1px solid var(--border); }
+  tr:last-child td { border-bottom:none; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+  .badge-active { background:#d1fae5; color:#065f46; }
+  .badge-inactive { background:#f3f4f6; color:#6b7280; }
+  .toast { position:fixed; top:20px; right:20px; z-index:200; padding:12px 20px; border-radius:8px; font-size:13px; font-weight:600; color:#fff; transform:translateX(120%); transition:.3s; }
+  .toast.show { transform:translateX(0); }
+  .toast-success { background:var(--green); }
+  .toast-error { background:var(--red); }
+  .empty { text-align:center; padding:40px 20px; color:var(--sub); }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">🏷️ Deal Manager</span>
+  <a href="/admin">Deals</a>
+  <a href="/admin/categories">Categories</a>
+  <a href="/admin/settings" class="active">Settings</a>
+  <a href="/" target="_blank">Preview Store →</a>
+</nav>
+
+<div class="container">
+  <div class="header">
+    <h1>⚙️ Settings</h1>
+  </div>
+
+  <!-- Site Settings -->
+  <div class="card">
+    <h3>Site Configuration</h3>
+    <div class="form-group">
+      <label>Google Sheet URL</label>
+      <input type="url" id="setting_google_sheet_url" value="{{ settings.get('google_sheet_url', '') }}" 
+             placeholder="https://docs.google.com/spreadsheets/d/..." 
+             onchange="saveSetting('google_sheet_url', this.value)">
+      <div class="hint">Link to your Google Sheet shown on the public storefront as a button.</div>
+    </div>
+
+    <div class="form-group">
+      <label>Subscribe Form URL (optional)</label>
+      <input type="url" id="setting_subscribe_url" value="{{ settings.get('subscribe_url', '') }}" 
+             placeholder="Leave empty to use built-in subscribe form" 
+             onchange="saveSetting('subscribe_url', this.value)">
+      <div class="hint">If set, the Subscribe button will link to this external form (Google Forms, Mailchimp, etc.). Leave empty to use the built-in email capture.</div>
+    </div>
+
+    <div class="form-group">
+      <label>Site Title</label>
+      <input type="text" id="setting_site_title" value="{{ settings.get('site_title', 'Daily Deals') }}" 
+             placeholder="Daily Deals" 
+             onchange="saveSetting('site_title', this.value)">
+    </div>
+
+    <div class="form-group">
+      <label>Site Tagline</label>
+      <input type="text" id="setting_site_tagline" value="{{ settings.get('site_tagline', 'Best Amazon Deals — Updated Every Day') }}" 
+             placeholder="Best Amazon Deals — Updated Every Day" 
+             onchange="saveSetting('site_tagline', this.value)">
+    </div>
+  </div>
+
+  <!-- Subscribers -->
+  <div class="card">
+    <h3>📬 Subscribers ({{ subscriber_count }})</h3>
+    {% if subscribers %}
+    <table>
+      <thead>
+        <tr><th>Email</th><th>Status</th><th>Subscribed</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for s in subscribers %}
+        <tr>
+          <td>{{ s.email }}</td>
+          <td><span class="badge badge-{{ 'active' if s.status == 1 else 'inactive' }}">{{ 'Active' if s.status == 1 else 'Inactive' }}</span></td>
+          <td style="font-size:12px;color:var(--sub);">{{ s.subscribed_at[:10] if s.subscribed_at else '—' }}</td>
+          <td><button class="btn btn-ghost btn-sm btn-danger" onclick="deleteSub('{{ s.id }}')">Remove</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No subscribers yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function saveSetting(key, value) {
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({key, value})
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.success) showToast('Saved!');
+    else showToast('Failed to save', 'error');
+  });
+}
+
+function deleteSub(id) {
+  if (!confirm('Remove this subscriber?')) return;
+  fetch(`/api/subscribers/${id}`, {method:'DELETE'})
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) { showToast('Removed'); setTimeout(() => location.reload(), 400); }
+      else showToast('Failed', 'error');
+    });
+}
+</script>
+</body>
+</html>

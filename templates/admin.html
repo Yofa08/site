@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deal Manager — Admin Dashboard</title>
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --card: #fff;
+    --primary: #4361ee;
+    --text: #1a1a2e;
+    --sub: #6b7280;
+    --border: #e5e7eb;
+    --red: #ef4444;
+    --green: #10b981;
+    --orange: #f59e0b;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  nav { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 24px; }
+  nav a { text-decoration: none; color: var(--sub); font-weight: 500; font-size: 14px; }
+  nav a.active { color: var(--primary); }
+  nav .brand { font-weight: 700; font-size: 16px; color: var(--text); margin-right: auto; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .stats { display: flex; gap: 16px; margin-bottom: 20px; }
+  .stat { background: var(--card); border-radius: var(--radius); padding: 16px 20px; flex: 1; box-shadow: var(--shadow); }
+  .stat .label { font-size: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: .5px; }
+  .stat .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: .15s; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { opacity: .9; }
+  .btn-ghost { background: none; color: var(--sub); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: #f9fafb; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-danger { color: var(--red); border-color: var(--red); background: none; }
+  .btn-danger:hover { background: #fef2f2; }
+
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 12px 16px; background: #fafbfc; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--sub); font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafbfc; }
+  .deal-img { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; background: #f3f4f6; }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .status-1 { background: #d1fae5; color: #065f46; }
+  .status-0 { background: #fef3c7; color: #92400e; }
+  .status-2 { background: #f3f4f6; color: #6b7280; }
+  .hot-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; background: #fce7f3; color: #be185d; margin-left: 4px; }
+  .code-tag { font-family: monospace; background: #fef3c7; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+  .link-icon { color: var(--sub); text-decoration: none; margin: 0 2px; font-size: 16px; }
+  .link-icon:hover { color: var(--primary); }
+
+  .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 16px; }
+  .pagination a { padding: 6px 12px; border-radius: 6px; text-decoration: none; color: var(--text); font-size: 13px; border: 1px solid var(--border); }
+  .pagination a:hover { background: #f3f4f6; }
+  .pagination a.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .pagination span { color: var(--sub); font-size: 13px; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; justify-content: center; align-items: flex-start; padding-top: 60px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--card); border-radius: 12px; width: 720px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+  .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .modal-header h3 { font-size: 18px; font-weight: 700; }
+  .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--sub); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
+  .modal-close:hover { background: #f3f4f6; }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 4px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; transition: .15s; }
+  .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,.1); }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-inline { display: flex; align-items: center; gap: 8px; }
+  .form-inline label { margin: 0; display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text); text-transform: none; cursor: pointer; }
+
+  .toast { position: fixed; top: 20px; right: 20px; z-index: 200; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #fff; transform: translateX(120%); transition: .3s; }
+  .toast.show { transform: translateX(0); }
+  .toast-success { background: var(--green); }
+  .toast-error { background: var(--red); }
+
+  .filter-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--sub); }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="brand">🏷️ Deal Manager</span>
+  <a href="/admin" class="active">Deals</a>
+  <a href="/admin/categories">Categories</a>
+  <a href="/admin/settings">Settings</a>
+  <a href="/" target="_blank">Preview Store →</a>
+</nav>
+
+<div class="container">
+  <div class="header">
+    <h1>📦 Deal Dashboard</h1>
+    <button class="btn btn-primary" onclick="openCreateModal()">+ New Deal</button>
+    <button class="btn btn-ghost" onclick="openImportModal()" style="margin-left:8px;">📋 Import from Template</button>
+  </div>
+
+  <!-- Date Navigation -->
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;flex-wrap:wrap;background:var(--card);border-radius:var(--radius);padding:10px 16px;box-shadow:var(--shadow);">
+    <span style="font-size:12px;font-weight:600;color:var(--sub);margin-right:8px;">📅</span>
+    <a href="/admin" style="padding:5px 12px;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;
+      {{ 'background:var(--primary);color:#fff;' if not selected_date else 'color:var(--sub);border:1px solid var(--border);' }}">All ({{ all_count }})</a>
+    {% for dn in date_nav %}
+    <a href="/admin?date={{ dn.iso }}" style="padding:5px 12px;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;
+      {{ 'background:var(--primary);color:#fff;' if dn.iso == selected_date else 'color:var(--sub);border:1px solid var(--border);' }}">
+      {{ dn.label }}{% if dn.suffix %} ({{ dn.suffix }}){% endif %}
+      <span style="font-weight:400;opacity:.7;">{{ dn.count }}</span>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Batch action bar (hidden by default) -->
+  <div id="batchBar" style="display:none;align-items:center;gap:8px;margin-bottom:16px;background:#fef3c7;border:1px solid #fcd34d;border-radius:var(--radius);padding:10px 16px;">
+    <span id="batchCount" style="font-weight:700;font-size:13px;">0 selected</span>
+    <button class="btn btn-ghost btn-sm" onclick="batchAction('set_status', 1)">✅ Set Active</button>
+    <button class="btn btn-ghost btn-sm" onclick="batchAction('set_status', 0)">📝 Set Draft</button>
+    <button class="btn btn-ghost btn-sm" onclick="batchAction('set_status', 2)">⏰ Set Expired</button>
+    <button class="btn btn-ghost btn-sm" onclick="batchAction('toggle_hot')">🔥 Toggle HOT</button>
+    <button class="btn btn-ghost btn-sm btn-danger" onclick="batchAction('delete')">🗑 Delete</button>
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="clearSelection()">✕ Clear</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">Total Deals</div>
+      <div class="value">{{ total }}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Categories</div>
+      <div class="value">{{ categories|length }}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Page</div>
+      <div class="value">{{ page }} / {{ total_pages }}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:32px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" style="cursor:pointer;"></th>
+          <th>Image</th>
+          <th>Product Name</th>
+          <th>Category</th>
+          <th>Date</th>
+          <th>Price</th>
+          <th>Code</th>
+          <th>Rating</th>
+          <th>Budget</th>
+          <th>Status</th>
+          <th>Links</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if deals %}
+        {% for d in deals %}
+        <tr id="row-{{ d.id }}">
+          <td><input type="checkbox" class="deal-check" value="{{ d.id }}" onclick="updateBatchBar()" style="cursor:pointer;"></td>
+          <td>
+            {% if d.image_url %}
+            <img src="{{ d.image_url }}" class="deal-img" alt="">
+            {% else %}
+            <div class="deal-img" style="display:flex;align-items:center;justify-content:center;color:#ccc;">—</div>
+            {% endif %}
+          </td>
+          <td style="max-width:240px;">
+            <div style="font-weight:600;">{{ d.name[:60] }}{% if d.name|length > 60 %}...{% endif %}</div>
+            {% if d.total_discount %}
+            <span style="color:var(--red);font-weight:700;font-size:12px;">{{ d.total_discount }} OFF</span>
+            {% endif %}
+          </td>
+          <td>{{ d.category_name or '—' }}</td>
+          <td style="white-space:nowrap;font-size:12px;color:var(--sub);">{{ d.deal_date or '—' }}</td>
+          <td style="white-space:nowrap;">
+            {% if d.discount_price %}
+            <span style="color:var(--red);font-weight:600;">{{ d.discount_price }}</span><br>
+            <span style="text-decoration:line-through;color:var(--sub);font-size:11px;">{{ d.original_price }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td>{% if d.code %}<span class="code-tag">{{ d.code }}</span>{% else %}—{% endif %}</td>
+          <td>{{ d.rating or '—' }}</td>
+          <td>{% if d.budget %}<span style="color:#0f9d58;font-weight:700;font-size:12px;">${{ d.budget }}</span>{% else %}—{% endif %}</td>
+          <td>
+            <span class="status-badge status-{{ d.status }}">{{ {1:'Active',0:'Draft',2:'Expired'}.get(d.status, '?') }}</span>
+            {% if d.is_hot %}<span class="hot-badge">HOT</span>{% endif %}
+          </td>
+          <td>
+            {% if d.amazon_link %}<a href="{{ d.amazon_link }}" target="_blank" class="link-icon" title="Amazon">🛒</a>{% endif %}
+            {% if d.promotion_link %}<a href="{{ d.promotion_link }}" target="_blank" class="link-icon" title="Promotion">🎫</a>{% endif %}
+          </td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="openEditModal('{{ d.id }}')">Edit</button>
+            <button class="btn btn-ghost btn-sm btn-danger" onclick="deleteDeal('{{ d.id }}')">Delete</button>
+          </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr><td colspan="12" class="empty">
+          <div class="icon">📦</div>
+          No deals yet. Click <strong>+ New Deal</strong> to add your first one.
+        </td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+      {% if page > 1 %}
+      <a href="?page=1">««</a>
+      <a href="?page={{ page - 1 }}">«</a>
+      {% endif %}
+      {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+      <a href="?page={{ p }}" class="{% if p == page %}active{% endif %}">{{ p }}</a>
+      {% endfor %}
+      {% if page < total_pages %}
+      <a href="?page={{ page + 1 }}">»</a>
+      <a href="?page={{ total_pages }}">»»</a>
+      {% endif %}
+      <span>{{ total }} total</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Create / Edit Modal -->
+<div class="modal-overlay" id="dealModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">New Deal</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="dealForm">
+        <input type="hidden" id="dealId" name="id">
+        
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" name="name" required placeholder="LILLUSORY Womens Striped Pullover Sweater">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select name="category_id">
+              <option value="">— None —</option>
+              {% for c in categories %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Image URL</label>
+            <input type="url" name="image_url" placeholder="https://m.media-amazon.com/images/...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Original Price</label>
+            <input type="text" name="original_price" placeholder="$34.99">
+          </div>
+          <div class="form-group">
+            <label>Discount Price</label>
+            <input type="text" name="discount_price" placeholder="$11.99">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Total Discount</label>
+            <input type="text" name="total_discount" placeholder="66%">
+          </div>
+          <div class="form-group">
+            <label>Promo Code</label>
+            <input type="text" name="code" placeholder="UDGO456W">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Discount Details</label>
+          <input type="text" name="discount_detail" placeholder="40% off Code: XXX + 29% off with Deal">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amazon Link</label>
+            <input type="url" name="amazon_link" placeholder="https://www.amazon.com/dp/...">
+          </div>
+          <div class="form-group">
+            <label>Promotion Link</label>
+            <input type="url" name="promotion_link" placeholder="https://www.amazon.com/promocode/...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Rating</label>
+            <input type="text" name="rating" placeholder="4.4">
+          </div>
+          <div class="form-group">
+            <label>Review Count</label>
+            <input type="text" name="review_count" placeholder="1,770">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Date</label>
+            <input type="text" name="start_time" placeholder="2026-07-25">
+          </div>
+          <div class="form-group">
+            <label>End Date</label>
+            <input type="text" name="end_time" placeholder="2026-07-31">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Deal Date *</label>
+            <input type="date" name="deal_date" required>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select name="status">
+              <option value="1">Active</option>
+              <option value="0">Draft</option>
+              <option value="2">Expired</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="display:flex;gap:20px;flex-wrap:wrap;">
+          <label class="form-inline"><input type="checkbox" name="is_hot" value="true"> 🔥 Hot Deal</label>
+          <label class="form-inline"><input type="checkbox" name="is_featured" value="true"> ⭐ Hero Featured</label>
+          <label class="form-inline"><input type="checkbox" name="is_lower_price" value="true"> 📉 All-Time Low</label>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Daily Budget</label>
+            <input type="text" name="budget" placeholder="$50">
+          </div>
+          <div class="form-group"></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>CC Commission Title</label>
+            <input type="text" name="creator_name" placeholder="10% Commission for V NECK SUMMER TSHIRTS">
+          </div>
+          <div class="form-group">
+            <label>CC ID</label>
+            <input type="text" name="creator_id" placeholder="17M7FL48VYHI7">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Product Description</label>
+          <textarea name="info" rows="3" placeholder="Bullet points or highlights..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Internal Notes</label>
+          <textarea name="remark" rows="2" placeholder="Internal notes (not shown to visitors)"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDeal()">Save Deal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal" style="width:820px;">
+    <div class="modal-header">
+      <h3>📋 Import Deals from Template</h3>
+      <button class="modal-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--sub);margin-bottom:12px;">
+        Paste your deal data below. Supports <strong>Tab</strong>, <strong>Pipe (|)</strong>, or <strong>Comma</strong> separated values.
+        First row is auto-detected as headers — use column names like
+        <code>Name</code>, <code>Category</code>, <code>Image URL</code>, <code>Original Price</code>, <code>Discount Price</code>,
+        <code>Code</code>, <code>Amazon Link</code>, <code>Rating</code>, <code>Deal Date</code>, etc.
+      </p>
+      <p style="margin-bottom:12px;">
+        <a href="/static/template.xlsx" download style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#e8f5e9;color:#2e7d32;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">
+          📥 Download Excel Template
+        </a>
+      </p>
+
+      <!-- Import method tabs -->
+      <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">
+        <button onclick="switchImportTab('paste')" id="tabPaste" class="import-tab active"
+          style="padding:8px 20px;background:none;border:none;border-bottom:2px solid var(--primary);color:var(--primary);font-weight:600;font-size:13px;cursor:pointer;margin-bottom:-2px;">
+          📋 Paste Data
+        </button>
+        <button onclick="switchImportTab('upload')" id="tabUpload" class="import-tab"
+          style="padding:8px 20px;background:none;border:none;border-bottom:2px solid transparent;color:var(--sub);font-weight:600;font-size:13px;cursor:pointer;margin-bottom:-2px;">
+          📁 Upload Excel File
+        </button>
+      </div>
+
+      <!-- Paste area -->
+      <div id="importPasteArea">
+        <div class="form-group">
+          <label>Paste Data Here</label>
+          <textarea id="importText" rows="12" placeholder="Paste from Excel / Google Sheets here..." style="font-family:monospace;font-size:12px;"></textarea>
+        </div>
+        <div class="modal-footer" style="border:none;padding:0;justify-content:flex-end;">
+          <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="doImport()">⬇ Import All</button>
+        </div>
+      </div>
+
+      <!-- Upload area -->
+      <div id="importUploadArea" style="display:none;">
+        <div style="border:2px dashed var(--border);border-radius:8px;padding:40px 20px;text-align:center;margin-bottom:16px;">
+          <input type="file" id="excelFile" accept=".xlsx" onchange="onFileSelected(this)" style="display:none;">
+          <div style="font-size:40px;margin-bottom:12px;">📁</div>
+          <p style="font-weight:600;margin-bottom:4px;">Drag & drop your .xlsx file here</p>
+          <p style="font-size:12px;color:var(--sub);margin-bottom:12px;">or</p>
+          <button class="btn btn-ghost" onclick="document.getElementById('excelFile').click()" style="margin-bottom:8px;">
+            Browse Files
+          </button>
+          <div id="fileInfo" style="font-size:12px;color:var(--primary);font-weight:600;min-height:18px;"></div>
+        </div>
+        <div class="modal-footer" style="border:none;padding:0;justify-content:flex-end;">
+          <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
+          <button class="btn btn-primary" id="btnUpload" onclick="doUpload()" disabled>⬆ Upload & Import</button>
+        </div>
+      </div>
+
+      <div id="importResult" style="font-size:13px;min-height:24px;margin-top:12px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api/merches';
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function openCreateModal() {
+  document.getElementById('modalTitle').textContent = 'New Deal';
+  document.getElementById('dealForm').reset();
+  document.getElementById('dealId').value = '';
+  document.querySelectorAll('#dealForm input[type=checkbox]').forEach(c => c.checked = false);
+  // Set deal_date to today
+  document.querySelector('#dealForm input[name=deal_date]').value = new Date().toISOString().split('T')[0];
+  document.getElementById('dealModal').classList.add('open');
+}
+
+function openEditModal(id) {
+  document.getElementById('modalTitle').textContent = 'Edit Deal';
+  fetch(`${API}/${id}`)
+    .then(r => r.json())
+    .then(res => {
+      if (!res.success) { showToast('Failed to load deal', 'error'); return; }
+      const d = res.data;
+      const form = document.getElementById('dealForm');
+      document.getElementById('dealId').value = d.id;
+      form.name.value = d.name || '';
+      form.category_id.value = d.category_id || '';
+      form.image_url.value = d.image_url || '';
+      form.original_price.value = d.original_price || '';
+      form.discount_price.value = d.discount_price || '';
+      form.total_discount.value = d.total_discount || '';
+      form.discount_detail.value = d.discount_detail || '';
+      form.code.value = d.code || '';
+      form.amazon_link.value = d.amazon_link || '';
+      form.promotion_link.value = d.promotion_link || '';
+      form.rating.value = d.rating || '';
+      form.review_count.value = d.review_count || '';
+      form.start_time.value = d.start_time || '';
+      form.end_time.value = d.end_time || '';
+      form.deal_date.value = d.deal_date || '';
+      form.status.value = d.status;
+      form.info.value = d.info || '';
+      form.remark.value = d.remark || '';
+      form.is_hot.checked = d.is_hot;
+      form.is_featured.checked = d.is_featured;
+      form.is_lower_price.checked = d.is_lower_price;
+      form.budget.value = d.budget || '';
+      form.creator_name.value = d.creator_name || '';
+      form.creator_id.value = d.creator_id || '';
+      document.getElementById('dealModal').classList.add('open');
+    })
+    .catch(() => showToast('Network error', 'error'));
+}
+
+function closeModal() {
+  document.getElementById('dealModal').classList.remove('open');
+}
+
+function saveDeal() {
+  const form = document.getElementById('dealForm');
+  const data = new FormData(form);
+  
+  const payload = {};
+  for (let [k, v] of data.entries()) {
+    if (v === 'true') v = true;
+    else if (v === 'false') v = false;
+    payload[k] = v;
+  }
+  if (!data.has('is_hot')) payload.is_hot = false;
+  if (!data.has('is_featured')) payload.is_featured = false;
+  if (!data.has('is_lower_price')) payload.is_lower_price = false;
+  payload.status = parseInt(payload.status);
+
+  const id = document.getElementById('dealId').value;
+  const method = id ? 'PUT' : 'POST';
+  const url = id ? `${API}/${id}` : API;
+
+  fetch(url, {
+    method,
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.success) {
+      showToast(id ? 'Deal updated!' : 'Deal created!');
+      closeModal();
+      setTimeout(() => location.reload(), 500);
+    } else {
+      showToast('Operation failed', 'error');
+    }
+  })
+  .catch(() => showToast('Network error', 'error'));
+}
+
+function deleteDeal(id) {
+  if (!confirm('Are you sure you want to delete this deal?')) return;
+  fetch(`${API}/${id}`, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        showToast('Deal deleted');
+        setTimeout(() => location.reload(), 500);
+      } else {
+        showToast('Delete failed', 'error');
+      }
+    })
+    .catch(() => showToast('Network error', 'error'));
+}
+
+document.getElementById('dealModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { closeModal(); closeImportModal(); }
+});
+
+// ── Import from Template ──────────────────────────────
+
+let selectedFile = null;
+let currentTab = 'paste';
+
+// ── Batch selection ─────────────────────────────────
+
+function toggleSelectAll(btn) {
+  document.querySelectorAll('.deal-check').forEach(cb => {
+    cb.checked = btn.checked;
+  });
+  updateBatchBar();
+}
+
+function updateBatchBar() {
+  const checked = document.querySelectorAll('.deal-check:checked');
+  const bar = document.getElementById('batchBar');
+  const count = document.getElementById('batchCount');
+  const selectAll = document.getElementById('selectAll');
+
+  if (checked.length > 0) {
+    bar.style.display = 'flex';
+    count.textContent = checked.length + ' selected';
+  } else {
+    bar.style.display = 'none';
+    selectAll.checked = false;
+  }
+}
+
+function getSelectedIds() {
+  return Array.from(document.querySelectorAll('.deal-check:checked')).map(cb => cb.value);
+}
+
+function clearSelection() {
+  document.querySelectorAll('.deal-check').forEach(cb => cb.checked = false);
+  document.getElementById('selectAll').checked = false;
+  updateBatchBar();
+}
+
+function batchAction(action, statusVal) {
+  const ids = getSelectedIds();
+  if (ids.length === 0) return showToast('No deals selected', 'error');
+
+  let confirmMsg;
+  if (action === 'delete') confirmMsg = 'Delete ' + ids.length + ' deal(s)? This cannot be undone.';
+  else if (action === 'set_status') {
+    const labels = {1: 'Active', 0: 'Draft', 2: 'Expired'};
+    confirmMsg = 'Set ' + ids.length + ' deal(s) to ' + (labels[statusVal] || statusVal) + '?';
+  } else if (action === 'toggle_hot') confirmMsg = 'Toggle HOT on ' + ids.length + ' deal(s)?';
+  else confirmMsg = 'Apply ' + action + ' to ' + ids.length + ' deal(s)?';
+
+  if (!confirm(confirmMsg)) return;
+
+  const payload = {action, ids};
+  if (action === 'set_status') payload.status = statusVal;
+
+  fetch(API + '/batch-action', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.success) {
+      showToast('Done! Reloading...');
+      setTimeout(() => location.reload(), 600);
+    } else {
+      showToast('Failed: ' + (res.detail || 'error'), 'error');
+    }
+  })
+  .catch(() => showToast('Network error', 'error'));
+}
+
+// ── Import from Template ──────────────────────────────
+
+function openImportModal() {
+  document.getElementById('importText').value = '';
+  document.getElementById('importResult').textContent = '';
+  document.getElementById('excelFile').value = '';
+  document.getElementById('fileInfo').textContent = '';
+  document.getElementById('btnUpload').disabled = true;
+  selectedFile = null;
+  switchImportTab('paste');
+  document.getElementById('importModal').classList.add('open');
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').classList.remove('open');
+}
+
+function switchImportTab(tab) {
+  currentTab = tab;
+  const tabPaste = document.getElementById('tabPaste');
+  const tabUpload = document.getElementById('tabUpload');
+  const pasteArea = document.getElementById('importPasteArea');
+  const uploadArea = document.getElementById('importUploadArea');
+
+  if (tab === 'paste') {
+    tabPaste.style.borderBottom = '2px solid var(--primary)';
+    tabPaste.style.color = 'var(--primary)';
+    tabUpload.style.borderBottom = '2px solid transparent';
+    tabUpload.style.color = 'var(--sub)';
+    pasteArea.style.display = '';
+    uploadArea.style.display = 'none';
+  } else {
+    tabUpload.style.borderBottom = '2px solid var(--primary)';
+    tabUpload.style.color = 'var(--primary)';
+    tabPaste.style.borderBottom = '2px solid transparent';
+    tabPaste.style.color = 'var(--sub)';
+    pasteArea.style.display = 'none';
+    uploadArea.style.display = '';
+  }
+  document.getElementById('importResult').textContent = '';
+}
+
+function onFileSelected(input) {
+  if (input.files.length > 0) {
+    selectedFile = input.files[0];
+    document.getElementById('fileInfo').textContent = '✅ ' + selectedFile.name + ' (' + formatSize(selectedFile.size) + ')';
+    document.getElementById('btnUpload').disabled = false;
+  }
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function doImport() {
+  const text = document.getElementById('importText').value.trim();
+  const result = document.getElementById('importResult');
+  if (!text) { result.textContent = 'Please paste some data first.'; result.style.color = '#ef4444'; return; }
+
+  result.textContent = 'Importing...';
+  result.style.color = 'var(--sub)';
+
+  fetch(API + '/batch', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({text})
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.success) {
+      const d = res.data;
+      result.textContent = '✅ Imported ' + d.imported + ' deal(s).' + (d.errors.length ? ' ' + d.errors.length + ' skipped.' : '');
+      result.style.color = '#10b981';
+      if (d.errors.length) result.textContent += ' — ' + d.errors.join('; ');
+      if (d.imported > 0) setTimeout(() => location.reload(), 1500);
+      else document.getElementById('importText').value = '';
+    } else {
+      result.textContent = 'Import failed.';
+      result.style.color = '#ef4444';
+    }
+  })
+  .catch(() => { result.textContent = 'Network error'; result.style.color = '#ef4444'; });
+}
+
+function doUpload() {
+  if (!selectedFile) return;
+
+  const result = document.getElementById('importResult');
+  const btn = document.getElementById('btnUpload');
+  result.textContent = 'Uploading and importing...';
+  result.style.color = 'var(--sub)';
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+
+  fetch(API + '/upload', {
+    method: 'POST',
+    body: formData
+  })
+  .then(r => r.json())
+  .then(res => {
+    btn.disabled = false;
+    btn.textContent = '⬆ Upload & Import';
+    if (res.success) {
+      const d = res.data;
+      result.textContent = '✅ Imported ' + d.imported + ' deal(s) from ' + (d.filename || 'file') + '.' + (d.errors.length ? ' ' + d.errors.length + ' skipped.' : '');
+      result.style.color = '#10b981';
+      if (d.errors.length) result.textContent += ' — ' + d.errors.join('; ');
+      if (d.imported > 0) setTimeout(() => location.reload(), 1500);
+    } else {
+      result.textContent = 'Upload failed: ' + (res.detail || 'Unknown error');
+      result.style.color = '#ef4444';
+    }
+  })
+  .catch(e => { result.textContent = 'Network error: ' + e.message; result.style.color = '#ef4444'; btn.disabled = false; btn.textContent = '⬆ Upload & Import'; });
+}
+
+// Drag & drop on upload area
+document.getElementById('importUploadArea').addEventListener('dragover', function(e) {
+  e.preventDefault();
+  this.style.borderColor = 'var(--primary)';
+  this.style.background = 'rgba(67,97,238,.04)';
+});
+document.getElementById('importUploadArea').addEventListener('dragleave', function(e) {
+  e.preventDefault();
+  this.style.borderColor = 'var(--border)';
+  this.style.background = '';
+});
+document.getElementById('importUploadArea').addEventListener('drop', function(e) {
+  e.preventDefault();
+  this.style.borderColor = 'var(--border)';
+  this.style.background = '';
+  if (e.dataTransfer.files.length > 0) {
+    const input = document.getElementById('excelFile');
+    input.files = e.dataTransfer.files;
+    onFileSelected(input);
+  }
+});
+
+document.getElementById('importModal').addEventListener('click', function(e) {
+  if (e.target === this) closeImportModal();
+});
+</script>
+</body>
+</html>
