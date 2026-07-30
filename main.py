@@ -5,7 +5,6 @@ Start: uv run python main.py
 
 import re
 import math
-from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -70,12 +69,12 @@ def guess_field(col_name: str) -> Optional[str]:
         return ALIAS_TO_FIELD[paren.group(1).strip()]
     return None
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    init_db()
-    yield
 
-app = FastAPI(title="Deal Manager", version="1.2.0", lifespan=lifespan)
+# Initialize DB at startup
+init_db()
+
+
+app = FastAPI(title="Deal Manager", version="1.2.0")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
