@@ -3,7 +3,9 @@
 Start: uv run python main.py
 """
 
+import re
 import math
+from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -59,7 +61,6 @@ def guess_field(col_name: str) -> Optional[str]:
     if name in ALIAS_TO_FIELD:
         return ALIAS_TO_FIELD[name]
     # Strip parenthetical suffix: "CC (Commission)" → "cc"
-    import re
     stripped = re.sub(r'\s*\(.*?\)\s*', '', name).strip()
     if stripped and stripped in ALIAS_TO_FIELD:
         return ALIAS_TO_FIELD[stripped]
@@ -68,8 +69,6 @@ def guess_field(col_name: str) -> Optional[str]:
     if paren and paren.group(1).strip() in ALIAS_TO_FIELD:
         return ALIAS_TO_FIELD[paren.group(1).strip()]
     return None
-
-from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
