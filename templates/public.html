@@ -36,7 +36,7 @@
   .hdr-btn-sub:hover { background: #c0392b; }
 
   .date-nav {
-    display: flex; gap: 0; justify-content: center; padding: 0 16px; max-width: 1200px; margin: 0 auto;
+    display: flex; gap: 0; justify-content: center; padding: 0 16px; max-width: 1600px; margin: 0 auto;
   }
   .date-nav a {
     display: block; padding: 10px 24px; font-size: 14px; font-weight: 600;
@@ -48,7 +48,7 @@
   .date-nav .date-suffix { font-size: 11px; font-weight: 400; margin-left: 4px; color: var(--sub); }
 
   .cat-nav {
-    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 14px; max-width: 1200px; margin: 0 auto;
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 14px; max-width: 1600px; margin: 0 auto;
   }
   .cat-nav a {
     padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
@@ -57,10 +57,10 @@
   .cat-nav a:hover, .cat-nav a.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
   /* ── Hero Section ── */
-  .hero-section { max-width: 1200px; margin: 0 auto; padding: 20px 16px 0; }
+  .hero-section { max-width: 1600px; margin: 0 auto; padding: 20px 16px 0; }
   .hero-title { font-size: 18px; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   .hero-title span { background: var(--primary); color: #fff; padding: 2px 10px; border-radius: 4px; font-size: 11px; }
-  .hero-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .hero-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
   .hero-card {
     background: var(--card); border-radius: var(--radius); overflow: hidden;
     box-shadow: var(--shadow); transition: .2s; border: 2px solid transparent; position: relative;
@@ -104,23 +104,29 @@
   .copy-box .copy-top-btn.copied { background: #10b981; }
 
   .section-divider {
-    max-width: 1200px; margin: 32px auto 12px; padding: 0 16px;
+    max-width: 1600px; margin: 32px auto 12px; padding: 0 16px;
     font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 10px;
   }
   .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
   /* ── Deal Grid ── */
   .grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px;
-    max-width: 1200px; margin: 0 auto; padding: 0 16px 32px;
+    display: grid; gap: 16px;
+    max-width: 1600px; margin: 0 auto; padding: 0 16px 32px;
+    grid-template-columns: 1fr;
   }
+  @media (min-width: 480px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 768px)  { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 1280px) { .grid { grid-template-columns: repeat(5, 1fr); } }
+  @media (min-width: 1560px) { .grid { grid-template-columns: repeat(6, 1fr); } }
   .card {
     background: var(--card); border-radius: var(--radius); overflow: hidden;
     box-shadow: var(--shadow); transition: .2s; display: flex; flex-direction: column; position: relative;
   }
   .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
   .card-img-wrap { position: relative; background: #fafafa; border-bottom: 1px solid var(--border); }
-  .card-img { width: 100%; height: 240px; object-fit: contain; padding: 16px; }
+  .card-img { width: 100%; height: 190px; object-fit: contain; padding: 14px; }
   .card-hot-badge { position: absolute; top: 10px; left: 10px; background: var(--primary); color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
   .card-featured-tag { position: absolute; top: 10px; right: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
 
@@ -174,13 +180,11 @@
   .modal-box .btn-close { margin-top: 12px; background: none; border: none; color: var(--sub); cursor: pointer; font-size: 13px; }
   .modal-msg { font-size: 13px; margin-top: 8px; min-height: 20px; }
 
-  footer { text-align: center; padding: 24px; color: var(--sub); font-size: 12px; border-top: 1px solid var(--border); max-width: 1200px; margin: 0 auto; }
-  .empty { text-align: center; padding: 80px 20px; color: var(--sub); max-width: 1200px; margin: 0 auto; }
+  footer { text-align: center; padding: 24px; color: var(--sub); font-size: 12px; border-top: 1px solid var(--border); max-width: 1600px; margin: 0 auto; }
+  .empty { text-align: center; padding: 80px 20px; color: var(--sub); max-width: 1600px; margin: 0 auto; }
   .empty .icon { font-size: 64px; margin-bottom: 16px; }
 
   @media (max-width: 640px) {
-    .grid { grid-template-columns: 1fr; }
-    .hero-grid { grid-template-columns: 1fr; }
     header h1 { font-size: 20px; }
     .hero-img { width: 90px; min-height: 90px; }
   }
