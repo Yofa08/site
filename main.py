@@ -42,7 +42,7 @@ FIELD_ALIASES = {
     "deal_date": ["deal date", "date", "deal_date", "day", "for date"],
     "is_hot": ["is hot", "hot", "featured", "is_hot", "top deal"],
     "is_featured": ["is featured", "hero", "featured deal", "is_featured", "showcase"],
-    "budget": ["budget", "daily budget", "spend", "ad budget"],
+    "budget": ["budget", "orders", "daily orders", "order budget", "target orders", "daily budget", "spend", "ad budget"],
     "creator_name": ["creator name", "creator", "influencer", "influencer name", "creator_name", "cc", "commission creator", "commission title", "commission"],
     "creator_id": ["creator id", "creator_id", "influencer id", "platform id", "cc id", "commission id", "commission creator id"],
     "status": ["status", "active"],
@@ -206,9 +206,9 @@ def build_influencer_copy(deal: Merch) -> str:
     if deal.discount_detail:
         lines.append(f"Detail: {deal.discount_detail}")
 
-    # Budget
+    # Orders
     if deal.budget:
-        lines.append(f"Budget: ${deal.budget}")
+        lines.append(f"Orders: {deal.budget}")
 
     # Start time
     if deal.start_time:
@@ -967,6 +967,7 @@ def api_list_categories(db: Session = Depends(get_db)):
 @app.get("/", response_class=HTMLResponse)
 def public_index(
     request: Request,
+    category: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     categories = (
@@ -976,21 +977,25 @@ def public_index(
     today = date.today()
 
     # Featured deals for hero section (today's featured)
-    featured = (
+    featured_query = (
         db.query(Merch)
         .filter(Merch.status == 1, Merch.deal_date == today, Merch.is_featured == True)
         .order_by(Merch.is_hot.desc(), Merch.created_at.desc())
-        .limit(6).all()
     )
+    if category:
+        featured_query = featured_query.filter(Merch.category_id == category)
+    featured = featured_query.limit(6).all()
     featured_ids = {f.id for f in featured}
 
     # All active deals, newest date first — everything on a single page
-    all_deals = (
+    all_deals_query = (
         db.query(Merch)
         .filter(Merch.status == 1)
         .order_by(Merch.deal_date.desc(), Merch.is_hot.desc(), Merch.created_at.desc())
-        .all()
     )
+    if category:
+        all_deals_query = all_deals_query.filter(Merch.category_id == category)
+    all_deals = all_deals_query.all()
 
     # Group by deal_date, newest first; featured deals stay in the hero only.
     # Explicit key sort so NULL deal_date always lands last on any DB (SQLite/PG).
@@ -1025,6 +1030,7 @@ def public_index(
         "date_groups": date_groups,
         "featured": [_deal_with_copy(f) for f in featured],
         "settings": site_settings,
+        "selected_category_id": category,
     })
 
 
