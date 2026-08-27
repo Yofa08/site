@@ -549,7 +549,14 @@ function autoFillFromAmazon() {
   msg.textContent = '正在抓取…'; msg.style.color = '#6b7280';
 
   fetch('/api/amazon/lookup?url=' + encodeURIComponent(url))
-    .then(r => r.json())
+    .then(async r => {
+      const ct = r.headers.get('content-type') || '';
+      const text = await r.text();
+      if (!ct.includes('json')) {
+        throw new Error('服务器返回异常（HTTP ' + r.status + '），通常是抓取超时，请稍后重试');
+      }
+      return JSON.parse(text);
+    })
     .then(res => {
       if (!res.success) {
         msg.textContent = '抓取失败：' + (res.detail || '未知错误');
@@ -578,7 +585,7 @@ function autoFillFromAmazon() {
       msg.textContent = '✅ 已填充：' + parts.join('，');
       msg.style.color = '#10b981';
     })
-    .catch(e => { msg.textContent = '网络错误：' + e.message; msg.style.color = '#ef4444'; });
+    .catch(e => { msg.textContent = '抓取失败：' + e.message; msg.style.color = '#ef4444'; });
 }
 
 function enrichDeals(ids) {
@@ -589,7 +596,14 @@ function enrichDeals(ids) {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(payload)
   })
-  .then(r => r.json())
+  .then(async r => {
+    const ct = r.headers.get('content-type') || '';
+    const text = await r.text();
+    if (!ct.includes('json')) {
+      throw new Error('服务器返回异常（HTTP ' + r.status + '），抓取可能超时');
+    }
+    return JSON.parse(text);
+  })
   .then(res => {
     if (res.success) {
       const d = res.data;
@@ -603,7 +617,7 @@ function enrichDeals(ids) {
       showToast('补全失败：' + (res.detail || '错误'), 'error');
     }
   })
-  .catch(e => showToast('网络错误', 'error'));
+  .catch(e => showToast('抓取失败：' + e.message, 'error'));
 }
 
 function manualEnrich() {
