@@ -537,7 +537,7 @@ footer,
 .card-body {
   display: grid;
   flex: 1;
-  gap: 3px;
+  gap: 2px;
   grid-template-rows:
     14px
     minmax(36px, auto)
