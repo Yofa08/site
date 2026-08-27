@@ -109,6 +109,7 @@
     <h1>📦 Deal Dashboard</h1>
     <button class="btn btn-primary" onclick="openCreateModal()">+ New Deal</button>
     <button class="btn btn-ghost" onclick="openImportModal()" style="margin-left:8px;">📋 Import from Template</button>
+    <button class="btn btn-ghost" onclick="manualEnrich()" style="margin-left:8px;" title="抓取 Amazon 现价/星级/评论数，补全缺失字段">🔍 补全 Amazon 数据</button>
   </div>
 
   <!-- Date Navigation -->
@@ -251,6 +252,15 @@
       <form id="dealForm">
         <input type="hidden" id="dealId" name="id">
         
+        <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#4338ca;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">⚡ 从 Amazon 链接自动填充</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="amzLookupUrl" placeholder="粘贴链接，如 https://www.amazon.com/dp/B0H1C81TR7" style="flex:1;padding:8px 12px;border:1px solid #c7d2fe;border-radius:6px;font-size:13px;" onkeydown="if(event.key==='Enter'){event.preventDefault();autoFillFromAmazon();}">
+            <button type="button" class="btn btn-primary" onclick="autoFillFromAmazon()" style="white-space:nowrap;">🔍 自动填充</button>
+          </div>
+          <div id="amzLookupMsg" style="font-size:12px;margin-top:6px;min-height:16px;color:#6b7280;"></div>
+        </div>
+
         <div class="form-group">
           <label>Product Name *</label>
           <input type="text" name="name" required placeholder="LILLUSORY Womens Striped Pullover Sweater">
@@ -422,6 +432,13 @@
         </button>
       </div>
 
+      <!-- Auto-enrich toggle -->
+      <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;margin-bottom:16px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:13px;cursor:pointer;">
+        <input type="checkbox" id="autoEnrich" style="width:16px;height:16px;cursor:pointer;">
+        <span style="font-weight:600;color:#4338ca;">⚡ 导入后自动抓取 Amazon 数据（现价/星级/评论数/图片）</span>
+        <span style="font-size:12px;color:#6b7280;">会逐条抓取，批量较大时较慢</span>
+      </label>
+
       <!-- Paste area -->
       <div id="importPasteArea">
         <div class="form-group">
@@ -473,6 +490,8 @@ function openCreateModal() {
   document.getElementById('modalTitle').textContent = 'New Deal';
   document.getElementById('dealForm').reset();
   document.getElementById('dealId').value = '';
+  document.getElementById('amzLookupUrl').value = '';
+  document.getElementById('amzLookupMsg').textContent = '';
   document.querySelectorAll('#dealForm input[type=checkbox]').forEach(c => c.checked = false);
   // Set deal_date to today
   document.querySelector('#dealForm input[name=deal_date]').value = new Date().toISOString().split('T')[0];
@@ -519,6 +538,83 @@ function openEditModal(id) {
 
 function closeModal() {
   document.getElementById('dealModal').classList.remove('open');
+}
+
+function autoFillFromAmazon() {
+  const url = document.getElementById('amzLookupUrl').value.trim();
+  const msg = document.getElementById('amzLookupMsg');
+  const form = document.getElementById('dealForm');
+  if (!url) { msg.textContent = '请先粘贴 Amazon 链接'; msg.style.color = '#ef4444'; return; }
+
+  msg.textContent = '正在抓取…'; msg.style.color = '#6b7280';
+
+  fetch('/api/amazon/lookup?url=' + encodeURIComponent(url))
+    .then(r => r.json())
+    .then(res => {
+      if (!res.success) {
+        msg.textContent = '抓取失败：' + (res.detail || '未知错误');
+        msg.style.color = '#ef4444';
+        return;
+      }
+      const d = res.data;
+      if (d.title && !form.name.value) form.name.value = d.title;
+      if (d.image_url) form.image_url.value = d.image_url;
+      // 价格映射：有原价(listPrice)则原价→original_price、现价→discount_price；
+      // 否则现价→original_price（作为 Amazon 当前售价基准）
+      if (d.original_price) {
+        form.original_price.value = d.original_price;
+        if (d.price) form.discount_price.value = d.price;
+      } else if (d.price) {
+        form.original_price.value = d.price;
+      }
+      if (d.rating) form.rating.value = d.rating;
+      if (d.reviews) form.review_count.value = d.reviews;
+      if (d.amazon_link && !form.amazon_link.value) form.amazon_link.value = d.amazon_link;
+
+      let parts = [];
+      if (d.price) parts.push('现价 $' + d.price);
+      if (d.rating) parts.push('星级 ' + d.rating);
+      if (d.reviews) parts.push(d.reviews + ' 条评论');
+      msg.textContent = '✅ 已填充：' + parts.join('，');
+      msg.style.color = '#10b981';
+    })
+    .catch(e => { msg.textContent = '网络错误：' + e.message; msg.style.color = '#ef4444'; });
+}
+
+function enrichDeals(ids) {
+  const payload = (ids && ids.length) ? { ids } : {};
+  showToast('🔍 正在抓取 Amazon 数据，请稍候…');
+  fetch('/api/amazon/enrich', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.success) {
+      const d = res.data;
+      let msg = '✅ 补全完成：更新 ' + d.updated + ' 条';
+      if (d.no_change) msg += '，' + d.no_change + ' 条无变化';
+      if (d.fetch_fail) msg += '，' + d.fetch_fail + ' 条抓取失败';
+      if (d.blocked) msg += '（⚠ 触发 Amazon 反爬，已停止）';
+      showToast(msg);
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      showToast('补全失败：' + (res.detail || '错误'), 'error');
+    }
+  })
+  .catch(e => showToast('网络错误', 'error'));
+}
+
+function manualEnrich() {
+  const ids = getSelectedIds();
+  if (ids.length > 0) {
+    if (!confirm('抓取所选 ' + ids.length + ' 条 deal 的 Amazon 数据？')) return;
+    enrichDeals(ids);
+  } else {
+    if (!confirm('补全所有缺价格/星级/评论数的 deal？这会逐条抓取，可能需要一些时间。')) return;
+    enrichDeals(null);
+  }
 }
 
 function saveDeal() {
@@ -730,8 +826,13 @@ function doImport() {
       result.textContent = '✅ Imported ' + d.imported + ' deal(s).' + (d.errors.length ? ' ' + d.errors.length + ' skipped.' : '');
       result.style.color = '#10b981';
       if (d.errors.length) result.textContent += ' — ' + d.errors.join('; ');
-      if (d.imported > 0) setTimeout(() => location.reload(), 1500);
-      else document.getElementById('importText').value = '';
+      if (d.imported > 0) {
+        if (document.getElementById('autoEnrich').checked && d.imported_ids && d.imported_ids.length) {
+          enrichDeals(d.imported_ids);
+        } else {
+          setTimeout(() => location.reload(), 1500);
+        }
+      } else document.getElementById('importText').value = '';
     } else {
       result.textContent = 'Import failed.';
       result.style.color = '#ef4444';
@@ -766,7 +867,13 @@ function doUpload() {
       result.textContent = '✅ Imported ' + d.imported + ' deal(s) from ' + (d.filename || 'file') + '.' + (d.errors.length ? ' ' + d.errors.length + ' skipped.' : '');
       result.style.color = '#10b981';
       if (d.errors.length) result.textContent += ' — ' + d.errors.join('; ');
-      if (d.imported > 0) setTimeout(() => location.reload(), 1500);
+      if (d.imported > 0) {
+        if (document.getElementById('autoEnrich').checked && d.imported_ids && d.imported_ids.length) {
+          enrichDeals(d.imported_ids);
+        } else {
+          setTimeout(() => location.reload(), 1500);
+        }
+      }
     } else {
       result.textContent = 'Upload failed: ' + (res.detail || 'Unknown error');
       result.style.color = '#ef4444';
