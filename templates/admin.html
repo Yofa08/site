@@ -4,137 +4,49 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deal Manager — Admin Dashboard</title>
-<style>
-  :root {
-    --bg: #f0f2f5;
-    --card: #fff;
-    --primary: #4361ee;
-    --text: #1a1a2e;
-    --sub: #6b7280;
-    --border: #e5e7eb;
-    --red: #ef4444;
-    --green: #10b981;
-    --orange: #f59e0b;
-    --radius: 8px;
-    --shadow: 0 1px 3px rgba(0,0,0,.08);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
-  nav { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 24px; }
-  nav a { text-decoration: none; color: var(--sub); font-weight: 500; font-size: 14px; }
-  nav a.active { color: var(--primary); }
-  nav .brand { font-weight: 700; font-size: 16px; color: var(--text); margin-right: auto; }
-  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .header h1 { font-size: 22px; font-weight: 700; }
-  .stats { display: flex; gap: 16px; margin-bottom: 20px; }
-  .stat { background: var(--card); border-radius: var(--radius); padding: 16px 20px; flex: 1; box-shadow: var(--shadow); }
-  .stat .label { font-size: 12px; color: var(--sub); text-transform: uppercase; letter-spacing: .5px; }
-  .stat .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
-
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: .15s; }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover { opacity: .9; }
-  .btn-ghost { background: none; color: var(--sub); border: 1px solid var(--border); }
-  .btn-ghost:hover { background: #f9fafb; }
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
-  .btn-danger { color: var(--red); border-color: var(--red); background: none; }
-  .btn-danger:hover { background: #fef2f2; }
-
-  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 12px 16px; background: #fafbfc; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--sub); font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
-  td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #fafbfc; }
-  .deal-img { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; background: #f3f4f6; }
-  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
-  .status-1 { background: #d1fae5; color: #065f46; }
-  .status-0 { background: #fef3c7; color: #92400e; }
-  .status-2 { background: #f3f4f6; color: #6b7280; }
-  .hot-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; background: #fce7f3; color: #be185d; margin-left: 4px; }
-  .code-tag { font-family: monospace; background: #fef3c7; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
-  .link-icon { color: var(--sub); text-decoration: none; margin: 0 2px; font-size: 16px; }
-  .link-icon:hover { color: var(--primary); }
-
-  .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 16px; }
-  .pagination a { padding: 6px 12px; border-radius: 6px; text-decoration: none; color: var(--text); font-size: 13px; border: 1px solid var(--border); }
-  .pagination a:hover { background: #f3f4f6; }
-  .pagination a.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-  .pagination span { color: var(--sub); font-size: 13px; }
-
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; justify-content: center; align-items: flex-start; padding-top: 60px; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: var(--card); border-radius: 12px; width: 720px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
-  .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .modal-header h3 { font-size: 18px; font-weight: 700; }
-  .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--sub); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
-  .modal-close:hover { background: #f3f4f6; }
-  .modal-body { padding: 24px; }
-  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
-
-  .form-group { margin-bottom: 16px; }
-  .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--sub); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 4px; }
-  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; transition: .15s; }
-  .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(67,97,238,.1); }
-  .form-group textarea { resize: vertical; min-height: 60px; }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .form-inline { display: flex; align-items: center; gap: 8px; }
-  .form-inline label { margin: 0; display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text); text-transform: none; cursor: pointer; }
-
-  .toast { position: fixed; top: 20px; right: 20px; z-index: 200; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #fff; transform: translateX(120%); transition: .3s; }
-  .toast.show { transform: translateX(0); }
-  .toast-success { background: var(--green); }
-  .toast-error { background: var(--red); }
-
-  .filter-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
-  .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
-
-  .empty { text-align: center; padding: 60px 20px; color: var(--sub); }
-  .empty .icon { font-size: 48px; margin-bottom: 12px; }
-</style>
+<link rel="stylesheet" href="/static/css/admin.css">
 </head>
 <body>
 
-<nav>
+<nav class="admin-topbar">
   <span class="brand">🏷️ Deal Manager</span>
   <a href="/admin" class="active">Deals</a>
   <a href="/admin/categories">Categories</a>
   <a href="/admin/settings">Settings</a>
-  <a href="/" target="_blank">Preview Store →</a>
+  <a href="/" target="_blank" rel="noopener noreferrer">Preview Store →</a>
 </nav>
 
 <div class="container">
   <div class="header">
     <h1>📦 Deal Dashboard</h1>
-    <button class="btn btn-primary" onclick="openCreateModal()">+ New Deal</button>
-    <button class="btn btn-ghost" onclick="openImportModal()" style="margin-left:8px;">📋 Import from Template</button>
-    <button class="btn btn-ghost" onclick="manualEnrich()" style="margin-left:8px;" title="抓取 Amazon 现价/星级/评论数，补全缺失字段">🔍 补全 Amazon 数据</button>
+    <div class="header-actions">
+      <button class="btn btn-primary" onclick="openCreateModal()">+ New Deal</button>
+      <button class="btn btn-ghost" onclick="openImportModal()">📋 Import from Template</button>
+      <button class="btn btn-ghost" onclick="manualEnrich()" title="抓取 Amazon 现价/星级/评论数，补全缺失字段">🔍 补全 Amazon 数据</button>
+    </div>
   </div>
 
   <!-- Date Navigation -->
-  <div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;flex-wrap:wrap;background:var(--card);border-radius:var(--radius);padding:10px 16px;box-shadow:var(--shadow);">
-    <span style="font-size:12px;font-weight:600;color:var(--sub);margin-right:8px;">📅</span>
-    <a href="/admin" style="padding:5px 12px;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;
-      {{ 'background:var(--primary);color:#fff;' if not selected_date else 'color:var(--sub);border:1px solid var(--border);' }}">All ({{ all_count }})</a>
+  <div class="date-filter">
+    <span class="date-filter__icon">📅</span>
+    <a href="/admin" class="date-chip {% if not selected_date %}active{% endif %}">All ({{ all_count }})</a>
     {% for dn in date_nav %}
-    <a href="/admin?date={{ dn.iso }}" style="padding:5px 12px;border-radius:14px;font-size:12px;font-weight:600;text-decoration:none;
-      {{ 'background:var(--primary);color:#fff;' if dn.iso == selected_date else 'color:var(--sub);border:1px solid var(--border);' }}">
+    <a href="/admin?date={{ dn.iso }}" class="date-chip {% if dn.iso == selected_date %}active{% endif %}">
       {{ dn.label }}{% if dn.suffix %} ({{ dn.suffix }}){% endif %}
-      <span style="font-weight:400;opacity:.7;">{{ dn.count }}</span>
+      <span class="date-chip__count">{{ dn.count }}</span>
     </a>
     {% endfor %}
   </div>
 
   <!-- Batch action bar (hidden by default) -->
-  <div id="batchBar" style="display:none;align-items:center;gap:8px;margin-bottom:16px;background:#fef3c7;border:1px solid #fcd34d;border-radius:var(--radius);padding:10px 16px;">
-    <span id="batchCount" style="font-weight:700;font-size:13px;">0 selected</span>
+  <div id="batchBar" class="batch-bar">
+    <span id="batchCount" class="batch-count">0 selected</span>
     <button class="btn btn-ghost btn-sm" onclick="batchAction('set_status', 1)">✅ Set Active</button>
     <button class="btn btn-ghost btn-sm" onclick="batchAction('set_status', 0)">📝 Set Draft</button>
     <button class="btn btn-ghost btn-sm" onclick="batchAction('set_status', 2)">⏰ Set Expired</button>
     <button class="btn btn-ghost btn-sm" onclick="batchAction('toggle_hot')">🔥 Toggle HOT</button>
     <button class="btn btn-ghost btn-sm btn-danger" onclick="batchAction('delete')">🗑 Delete</button>
-    <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="clearSelection()">✕ Clear</button>
+    <button class="btn btn-ghost btn-sm push-right" onclick="clearSelection()">✕ Clear</button>
   </div>
 
   <div class="stats">
@@ -152,11 +64,12 @@
     </div>
   </div>
 
-  <div class="card">
-    <table>
+  <div class="card table-card">
+    <div class="table-shell">
+    <table class="data-table">
       <thead>
         <tr>
-          <th style="width:32px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" style="cursor:pointer;"></th>
+          <th class="select-col"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
           <th>Image</th>
           <th>Product Name</th>
           <th>Category</th>
@@ -164,7 +77,7 @@
           <th>Price</th>
           <th>Code</th>
           <th>Rating</th>
-          <th>Budget</th>
+          <th>Orders</th>
           <th>Status</th>
           <th>Links</th>
           <th>Actions</th>
@@ -174,31 +87,31 @@
         {% if deals %}
         {% for d in deals %}
         <tr id="row-{{ d.id }}">
-          <td><input type="checkbox" class="deal-check" value="{{ d.id }}" onclick="updateBatchBar()" style="cursor:pointer;"></td>
+          <td><input type="checkbox" class="deal-check" value="{{ d.id }}" onclick="updateBatchBar()"></td>
           <td>
             {% if d.image_url %}
             <img src="{{ d.image_url }}" class="deal-img" alt="">
             {% else %}
-            <div class="deal-img" style="display:flex;align-items:center;justify-content:center;color:#ccc;">—</div>
+            <div class="deal-img deal-img-placeholder">—</div>
             {% endif %}
           </td>
-          <td style="max-width:240px;">
-            <div style="font-weight:600;">{{ d.name[:60] }}{% if d.name|length > 60 %}...{% endif %}</div>
+          <td class="product-col">
+            <div class="product-name">{{ d.name[:60] }}{% if d.name|length > 60 %}...{% endif %}</div>
             {% if d.total_discount %}
-            <span style="color:var(--red);font-weight:700;font-size:12px;">{{ d.total_discount }} OFF</span>
+            <span class="discount-line">{{ d.total_discount }} OFF</span>
             {% endif %}
           </td>
           <td>{{ d.category_name or '—' }}</td>
-          <td style="white-space:nowrap;font-size:12px;color:var(--sub);">{{ d.deal_date or '—' }}</td>
-          <td style="white-space:nowrap;">
+          <td class="muted-cell">{{ d.deal_date or '—' }}</td>
+          <td class="price-cell">
             {% if d.discount_price %}
-            <span style="color:var(--red);font-weight:600;">{{ d.discount_price }}</span><br>
-            <span style="text-decoration:line-through;color:var(--sub);font-size:11px;">{{ d.original_price }}</span>
+            <span class="price-current">{{ d.discount_price }}</span><br>
+            <span class="price-original">{{ d.original_price }}</span>
             {% else %}—{% endif %}
           </td>
           <td>{% if d.code %}<span class="code-tag">{{ d.code }}</span>{% else %}—{% endif %}</td>
           <td>{{ d.rating or '—' }}</td>
-          <td>{% if d.budget %}<span style="color:#0f9d58;font-weight:700;font-size:12px;">${{ d.budget }}</span>{% else %}—{% endif %}</td>
+          <td>{% if d.budget %}<span class="budget-value">{{ d.budget }} orders</span>{% else %}—{% endif %}</td>
           <td>
             <span class="status-badge status-{{ d.status }}">{{ {1:'Active',0:'Draft',2:'Expired'}.get(d.status, '?') }}</span>
             {% if d.is_hot %}<span class="hot-badge">HOT</span>{% endif %}
@@ -221,6 +134,7 @@
         {% endif %}
       </tbody>
     </table>
+    </div>
 
     {% if total_pages > 1 %}
     <div class="pagination">
@@ -252,13 +166,13 @@
       <form id="dealForm">
         <input type="hidden" id="dealId" name="id">
         
-        <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
-          <label style="display:block;font-size:12px;font-weight:600;color:#4338ca;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">⚡ 从 Amazon 链接自动填充</label>
-          <div style="display:flex;gap:8px;">
-            <input type="text" id="amzLookupUrl" placeholder="粘贴链接，如 https://www.amazon.com/dp/B0H1C81TR7" style="flex:1;padding:8px 12px;border:1px solid #c7d2fe;border-radius:6px;font-size:13px;" onkeydown="if(event.key==='Enter'){event.preventDefault();autoFillFromAmazon();}">
-            <button type="button" class="btn btn-primary" onclick="autoFillFromAmazon()" style="white-space:nowrap;">🔍 自动填充</button>
+        <div class="lookup-panel">
+          <label class="lookup-panel__label">⚡ 从 Amazon 链接自动填充</label>
+          <div class="lookup-row">
+            <input type="text" id="amzLookupUrl" placeholder="粘贴链接，如 https://www.amazon.com/dp/B0H1C81TR7" onkeydown="if(event.key==='Enter'){event.preventDefault();autoFillFromAmazon();}">
+            <button type="button" class="btn btn-primary nowrap" onclick="autoFillFromAmazon()">🔍 自动填充</button>
           </div>
-          <div id="amzLookupMsg" style="font-size:12px;margin-top:6px;min-height:16px;color:#6b7280;"></div>
+          <div id="amzLookupMsg" class="lookup-msg"></div>
         </div>
 
         <div class="form-group">
@@ -357,7 +271,7 @@
           </div>
         </div>
 
-        <div class="form-group" style="display:flex;gap:20px;flex-wrap:wrap;">
+        <div class="form-group form-checks">
           <label class="form-inline"><input type="checkbox" name="is_hot" value="true"> 🔥 Hot Deal</label>
           <label class="form-inline"><input type="checkbox" name="is_featured" value="true"> ⭐ Hero Featured</label>
           <label class="form-inline"><input type="checkbox" name="is_lower_price" value="true"> 📉 All-Time Low</label>
@@ -365,8 +279,8 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>Daily Budget</label>
-            <input type="text" name="budget" placeholder="$50">
+            <label>Orders</label>
+            <input type="text" name="budget" placeholder="50">
           </div>
           <div class="form-group"></div>
         </div>
@@ -402,74 +316,72 @@
 
 <!-- Import Modal -->
 <div class="modal-overlay" id="importModal">
-  <div class="modal" style="width:820px;">
+  <div class="modal modal-wide">
     <div class="modal-header">
       <h3>📋 Import Deals from Template</h3>
       <button class="modal-close" onclick="closeImportModal()">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--sub);margin-bottom:12px;">
+      <p class="import-help">
         Paste your deal data below. Supports <strong>Tab</strong>, <strong>Pipe (|)</strong>, or <strong>Comma</strong> separated values.
         First row is auto-detected as headers — use column names like
         <code>Name</code>, <code>Category</code>, <code>Image URL</code>, <code>Original Price</code>, <code>Discount Price</code>,
-        <code>Code</code>, <code>Amazon Link</code>, <code>Rating</code>, <code>Deal Date</code>, etc.
+        <code>Code</code>, <code>Amazon Link</code>, <code>Rating</code>, <code>Orders</code>, <code>Deal Date</code>, etc.
       </p>
-      <p style="margin-bottom:12px;">
-        <a href="/static/template.xlsx" download style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#e8f5e9;color:#2e7d32;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">
+      <p>
+        <a href="/static/template.xlsx" download class="download-template">
           📥 Download Excel Template
         </a>
       </p>
 
       <!-- Import method tabs -->
-      <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">
-        <button onclick="switchImportTab('paste')" id="tabPaste" class="import-tab active"
-          style="padding:8px 20px;background:none;border:none;border-bottom:2px solid var(--primary);color:var(--primary);font-weight:600;font-size:13px;cursor:pointer;margin-bottom:-2px;">
+      <div class="import-tabs">
+        <button onclick="switchImportTab('paste')" id="tabPaste" class="import-tab active">
           📋 Paste Data
         </button>
-        <button onclick="switchImportTab('upload')" id="tabUpload" class="import-tab"
-          style="padding:8px 20px;background:none;border:none;border-bottom:2px solid transparent;color:var(--sub);font-weight:600;font-size:13px;cursor:pointer;margin-bottom:-2px;">
+        <button onclick="switchImportTab('upload')" id="tabUpload" class="import-tab">
           📁 Upload Excel File
         </button>
       </div>
 
       <!-- Auto-enrich toggle -->
-      <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;margin-bottom:16px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:13px;cursor:pointer;">
-        <input type="checkbox" id="autoEnrich" style="width:16px;height:16px;cursor:pointer;">
-        <span style="font-weight:600;color:#4338ca;">⚡ 导入后自动抓取 Amazon 数据（现价/星级/评论数/图片）</span>
-        <span style="font-size:12px;color:#6b7280;">会逐条抓取，批量较大时较慢</span>
+      <label class="enrich-toggle">
+        <input type="checkbox" id="autoEnrich">
+        <span class="enrich-toggle__main">⚡ 导入后自动抓取 Amazon 数据（现价/星级/评论数/图片）</span>
+        <span class="enrich-toggle__hint">会逐条抓取，批量较大时较慢</span>
       </label>
 
       <!-- Paste area -->
       <div id="importPasteArea">
         <div class="form-group">
           <label>Paste Data Here</label>
-          <textarea id="importText" rows="12" placeholder="Paste from Excel / Google Sheets here..." style="font-family:monospace;font-size:12px;"></textarea>
+          <textarea id="importText" rows="12" placeholder="Paste from Excel / Google Sheets here..."></textarea>
         </div>
-        <div class="modal-footer" style="border:none;padding:0;justify-content:flex-end;">
+        <div class="modal-footer flush">
           <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
           <button class="btn btn-primary" onclick="doImport()">⬇ Import All</button>
         </div>
       </div>
 
       <!-- Upload area -->
-      <div id="importUploadArea" style="display:none;">
-        <div style="border:2px dashed var(--border);border-radius:8px;padding:40px 20px;text-align:center;margin-bottom:16px;">
-          <input type="file" id="excelFile" accept=".xlsx" onchange="onFileSelected(this)" style="display:none;">
-          <div style="font-size:40px;margin-bottom:12px;">📁</div>
-          <p style="font-weight:600;margin-bottom:4px;">Drag & drop your .xlsx file here</p>
-          <p style="font-size:12px;color:var(--sub);margin-bottom:12px;">or</p>
-          <button class="btn btn-ghost" onclick="document.getElementById('excelFile').click()" style="margin-bottom:8px;">
+      <div id="importUploadArea" class="is-hidden">
+        <div class="upload-drop">
+          <input type="file" id="excelFile" accept=".xlsx" onchange="onFileSelected(this)" class="upload-input">
+          <div class="upload-icon">📁</div>
+          <p class="upload-title">Drag & drop your .xlsx file here</p>
+          <p class="upload-or">or</p>
+          <button class="btn btn-ghost" onclick="document.getElementById('excelFile').click()">
             Browse Files
           </button>
-          <div id="fileInfo" style="font-size:12px;color:var(--primary);font-weight:600;min-height:18px;"></div>
+          <div id="fileInfo" class="file-info"></div>
         </div>
-        <div class="modal-footer" style="border:none;padding:0;justify-content:flex-end;">
+        <div class="modal-footer flush">
           <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
           <button class="btn btn-primary" id="btnUpload" onclick="doUpload()" disabled>⬆ Upload & Import</button>
         </div>
       </div>
 
-      <div id="importResult" style="font-size:13px;min-height:24px;margin-top:12px;"></div>
+      <div id="importResult" class="import-result"></div>
     </div>
   </div>
 </div>
@@ -789,19 +701,15 @@ function switchImportTab(tab) {
   const uploadArea = document.getElementById('importUploadArea');
 
   if (tab === 'paste') {
-    tabPaste.style.borderBottom = '2px solid var(--primary)';
-    tabPaste.style.color = 'var(--primary)';
-    tabUpload.style.borderBottom = '2px solid transparent';
-    tabUpload.style.color = 'var(--sub)';
-    pasteArea.style.display = '';
-    uploadArea.style.display = 'none';
+    tabPaste.classList.add('active');
+    tabUpload.classList.remove('active');
+    pasteArea.classList.remove('is-hidden');
+    uploadArea.classList.add('is-hidden');
   } else {
-    tabUpload.style.borderBottom = '2px solid var(--primary)';
-    tabUpload.style.color = 'var(--primary)';
-    tabPaste.style.borderBottom = '2px solid transparent';
-    tabPaste.style.color = 'var(--sub)';
-    pasteArea.style.display = 'none';
-    uploadArea.style.display = '';
+    tabUpload.classList.add('active');
+    tabPaste.classList.remove('active');
+    pasteArea.classList.add('is-hidden');
+    uploadArea.classList.remove('is-hidden');
   }
   document.getElementById('importResult').textContent = '';
 }
@@ -899,18 +807,18 @@ function doUpload() {
 // Drag & drop on upload area
 document.getElementById('importUploadArea').addEventListener('dragover', function(e) {
   e.preventDefault();
-  this.style.borderColor = 'var(--primary)';
-  this.style.background = 'rgba(67,97,238,.04)';
+  const drop = this.querySelector('.upload-drop');
+  if (drop) drop.classList.add('is-dragging');
 });
 document.getElementById('importUploadArea').addEventListener('dragleave', function(e) {
   e.preventDefault();
-  this.style.borderColor = 'var(--border)';
-  this.style.background = '';
+  const drop = this.querySelector('.upload-drop');
+  if (drop) drop.classList.remove('is-dragging');
 });
 document.getElementById('importUploadArea').addEventListener('drop', function(e) {
   e.preventDefault();
-  this.style.borderColor = 'var(--border)';
-  this.style.background = '';
+  const drop = this.querySelector('.upload-drop');
+  if (drop) drop.classList.remove('is-dragging');
   if (e.dataTransfer.files.length > 0) {
     const input = document.getElementById('excelFile');
     input.files = e.dataTransfer.files;
