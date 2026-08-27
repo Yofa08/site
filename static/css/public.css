@@ -498,7 +498,7 @@ footer,
   border-bottom: 1px solid var(--line);
   align-items: center;
   display: flex;
-  height: 166px;
+  height: 84px;
   justify-content: center;
   position: relative;
 }
