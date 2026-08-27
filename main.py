@@ -214,6 +214,14 @@ def build_influencer_hashtags(deal: Merch) -> str:
     return " ".join(tags)
 
 
+def _deal_with_copy(d: Merch) -> dict:
+    """Serialize a deal and attach influencer copy for the public storefront."""
+    dd = d.to_dict()
+    dd["influencer_copy"] = build_influencer_copy(d)
+    dd["influencer_hashtags"] = build_influencer_hashtags(d)
+    return dd
+
+
 # ── Health ────────────────────────────────────────────
 
 @app.get("/health")
@@ -700,79 +708,63 @@ def api_list_categories(db: Session = Depends(get_db)):
 @app.get("/", response_class=HTMLResponse)
 def public_index(
     request: Request,
-    date_param: Optional[str] = Query(None, alias="date"),
     db: Session = Depends(get_db),
 ):
     categories = (
         db.query(Category).filter(Category.status == 1)
         .order_by(Category.sort_order).all()
     )
-    q = db.query(Merch).filter(Merch.status == 1)
-
-    selected_date = date.today()
-    if date_param:
-        d = parse_date(date_param)
-        if d:
-            selected_date = d
-    q = q.filter(Merch.deal_date == selected_date)
+    today = date.today()
 
     # Featured deals for hero section (today's featured)
     featured = (
         db.query(Merch)
-        .filter(Merch.status == 1, Merch.deal_date == selected_date, Merch.is_featured == True)
+        .filter(Merch.status == 1, Merch.deal_date == today, Merch.is_featured == True)
         .order_by(Merch.is_hot.desc(), Merch.created_at.desc())
         .limit(6).all()
     )
+    featured_ids = {f.id for f in featured}
 
-    # Remaining deals (exclude featured, or all if no featured)
-    if featured:
-        featured_ids = [f.id for f in featured]
-        deals = (
-            q.filter(~Merch.id.in_(featured_ids))
-            .order_by(Merch.is_hot.desc(), Merch.created_at.desc())
-            .limit(40).all()
-        )
-    else:
-        deals = (
-            q.order_by(Merch.is_hot.desc(), Merch.created_at.desc())
-            .limit(40).all()
-        )
+    # All active deals, newest date first — everything on a single page
+    all_deals = (
+        db.query(Merch)
+        .filter(Merch.status == 1)
+        .order_by(Merch.deal_date.desc(), Merch.is_hot.desc(), Merch.created_at.desc())
+        .all()
+    )
 
-    # Build influencer copy for each deal
-    deals_with_copy = []
-    for d in deals:
-        dd = d.to_dict()
-        dd["influencer_copy"] = build_influencer_copy(d)
-        dd["influencer_hashtags"] = build_influencer_hashtags(d)
-        deals_with_copy.append(dd)
-    featured_with_copy = []
-    for f in featured:
-        fd = f.to_dict()
-        fd["influencer_copy"] = build_influencer_copy(f)
-        fd["influencer_hashtags"] = build_influencer_hashtags(f)
-        featured_with_copy.append(fd)
+    # Group by deal_date, newest first; featured deals stay in the hero only.
+    # Explicit key sort so NULL deal_date always lands last on any DB (SQLite/PG).
+    groups = {}
+    for d in all_deals:
+        if d.id in featured_ids:
+            continue
+        groups.setdefault(d.deal_date, []).append(d)
 
-    # Date nav
-    today = date.today()
-    date_nav = []
-    for i in range(3):
-        d = today - timedelta(days=i)
-        date_nav.append({
-            "label": d.strftime("%b %d"),
-            "iso": d.isoformat(),
-            "suffix": "Today" if i == 0 else ("Yesterday" if i == 1 else ""),
+    date_groups = []
+    for dkey, items in sorted(
+        groups.items(), key=lambda kv: (kv[0] is not None, kv[0] or date.max), reverse=True
+    ):
+        suffix = ""
+        if dkey:
+            if dkey == today:
+                suffix = "Today"
+            elif dkey == today - timedelta(days=1):
+                suffix = "Yesterday"
+        date_groups.append({
+            "label": dkey.strftime("%b %d, %Y") if dkey else "No Date",
+            "suffix": suffix,
+            "iso": dkey.isoformat() if dkey else "",
+            "deals": [_deal_with_copy(m) for m in items],
         })
 
-    # Site settings
     site_settings = {s.key: s.value for s in db.query(Setting).all()}
 
     return templates.TemplateResponse("public.html", {
         "request": request,
         "categories": [c.to_dict() for c in categories],
-        "deals": deals_with_copy,
-        "featured": featured_with_copy,
-        "selected_date": selected_date.isoformat(),
-        "date_nav": date_nav,
+        "date_groups": date_groups,
+        "featured": [_deal_with_copy(f) for f in featured],
         "settings": site_settings,
     })
 
