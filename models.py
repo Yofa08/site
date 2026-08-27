@@ -82,8 +82,8 @@ class Merch(Base):
     is_lower_price = Column(Boolean, default=False, comment="All-time low price")
     is_featured = Column(Boolean, default=False, comment="Show in today's featured hero section")
 
-    # Budget & Creator
-    budget = Column(String(50), default="", comment="Daily budget e.g. $50")
+    # Orders & Creator
+    budget = Column(String(50), default="", comment="Target orders e.g. 50")
     creator_name = Column(String(100), default="", comment="Creator/influencer name")
     creator_id = Column(String(100), default="", comment="Creator/influencer platform ID")
 
