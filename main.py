@@ -4,7 +4,10 @@ Start: uv run python main.py
 """
 
 import re
+import os
 import math
+import shutil
+import subprocess
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -13,6 +16,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from pydantic import BaseModel
 
 from database import get_db, init_db
@@ -125,15 +129,41 @@ class SubscribeRequest(BaseModel):
     email: str
 
 
+class EnrichRequest(BaseModel):
+    ids: list = []
+
+
 # ── Helpers ─────────────────────────────────────────────
 
 def parse_date(s: Optional[str]) -> Optional[date]:
+    """Parse a deal date, tolerating the formats Excel / the admin form produce.
+
+    Excel date cells come back as datetime objects and stringify to
+    "YYYY-MM-DD 00:00:00", which the old date.fromisoformat() rejected — so
+    every uploaded deal silently fell back to today's date. Accept objects,
+    ISO date/datetime strings, and common MM/DD/YYYY variants.
+    """
     if not s:
         return None
-    try:
-        return date.fromisoformat(s)
-    except (ValueError, TypeError):
+    if isinstance(s, datetime):
+        return s.date()
+    if isinstance(s, date):
+        return s
+    text = str(s).strip()
+    if not text:
         return None
+    # ISO date ("2026-08-30") or ISO datetime ("2026-08-30 00:00:00")
+    try:
+        return datetime.fromisoformat(text).date()
+    except (ValueError, TypeError):
+        pass
+    # Common fallback formats (US MM/DD/YYYY, slashes/dashes, 2-digit year)
+    for fmt in ("%Y/%m/%d", "%m/%d/%Y", "%m-%d-%Y", "%m/%d/%y"):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
 
 
 def get_setting(db: Session, key: str, default: str = "") -> str:
@@ -220,6 +250,155 @@ def _deal_with_copy(d: Merch) -> dict:
     dd["influencer_copy"] = build_influencer_copy(d)
     dd["influencer_hashtags"] = build_influencer_hashtags(d)
     return dd
+
+
+# ── Amazon product scraper (price / rating / reviews) ──
+
+AMZ_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+          "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+AMZ_COOKIE = "i18n-prefs=USD; lc-main=en_US; lc-acbus=en_US"  # force USD
+
+
+def extract_asin(text: str) -> Optional[str]:
+    """Pull a 10-char ASIN out of a URL or raw string."""
+    m = re.search(r"(?:/dp/|/gp/product/|/gp/aw/d/|/product/)([A-Z0-9]{10})", text)
+    if m:
+        return m.group(1)
+    m = re.search(r"\b([A-Z0-9]{10})\b", text)
+    if m:
+        return m.group(1)
+    return None
+
+
+def fetch_amazon_page(asin: str) -> Optional[str]:
+    """Download the product page via curl (its TLS fingerprint evades Amazon's
+    bot check, which Python's urllib/requests reliably triggers)."""
+    if shutil.which("curl") is None:
+        return None
+    url = "https://www.amazon.com/dp/" + asin
+    cmd = [
+        "curl", "-s", "-L", "-m", "25",
+        "-A", AMZ_UA,
+        "-H", "Accept-Language: en-US,en;q=0.9",
+        "-H", "Cookie: " + AMZ_COOKIE,
+    ]
+    # Optional proxy (e.g. residential proxy on Railway to dodge datacenter-IP
+    # bot checks). Set env var AMZ_PROXY=http://user:pass@host:port
+    proxy = os.getenv("AMZ_PROXY", "")
+    if proxy:
+        cmd += ["--proxy", proxy]
+    cmd.append(url)
+    try:
+        out = subprocess.run(cmd, capture_output=True, timeout=35)
+        html = out.stdout.decode("utf-8", errors="replace")
+        return html or None
+    except (subprocess.TimeoutExpired, Exception):
+        return None
+
+
+def is_amazon_blocked(html: str) -> bool:
+    return bool(re.search(r"(Robot Check|Enter the characters|captcha)", html, re.I))
+
+
+def parse_amazon_product(html: str) -> dict:
+    """Extract title / price / original price / rating / reviews / image."""
+    r = {"title": None, "price": None, "original_price": None,
+         "rating": None, "reviews": None, "image_url": None}
+
+    m = re.search(r'<span[^>]*id="productTitle"[^>]*>\s*(.*?)\s*</span>', html, re.S)
+    if m:
+        r["title"] = re.sub(r"<[^>]+>", "", m.group(1)).strip()
+
+    # Current price (embedded JSON)
+    m = re.search(r'"priceAmount"\s*:\s*([0-9]+\.[0-9]{2})', html)
+    if m:
+        r["price"] = m.group(1)
+    else:
+        m = re.search(r'<span[^>]*class="a-offscreen"[^>]*>\s*\$?([0-9]+\.[0-9]{2})', html)
+        if m:
+            r["price"] = m.group(1)
+
+    # Original / list price (strikethrough, if product is discounted)
+    m = re.search(r'"(?:listPrice|basisPrice)"\s*:\s*\{[^}]*"amount"\s*:\s*([0-9]+\.[0-9]{2})', html)
+    if m:
+        r["original_price"] = m.group(1)
+
+    # Star rating
+    m = re.search(r"(\d\.\d)\s*out of 5 stars", html)
+    if m:
+        r["rating"] = m.group(1)
+
+    # Review count
+    m = re.search(r'id="acrCustomerReviewText"[^>]*aria-label="([\d,]+)\s*(?:Reviews?|ratings?)"', html)
+    if m:
+        r["reviews"] = m.group(1)
+    else:
+        m = re.search(r'id="acrCustomerReviewText"[^>]*>\s*\(?([\d,]+)\)?\s*<', html)
+        if m:
+            r["reviews"] = m.group(1)
+
+    # Main image (upgrade to hi-res)
+    m = re.search(r'data-a-dynamic-image="\{&quot;(https://m\.media-amazon\.com/images/I/[^&]+\.jpg)', html)
+    if m:
+        r["image_url"] = re.sub(r"_AC_S[XY]\d+_", "_AC_SL1500_", m.group(1))
+
+    return r
+
+
+def enrich_deals(db: Session, ids: list) -> dict:
+    """Batch-scrape Amazon data to fill MISSING fields (never overwrite).
+
+    Rate-limited via AMZ_ENRICH_DELAY (seconds between requests, default 2).
+    Stops early if Amazon triggers a bot check.
+    """
+    import time
+
+    deals = db.query(Merch).filter(Merch.id.in_(ids)).all()
+    delay = float(os.getenv("AMZ_ENRICH_DELAY", "2.0"))
+    stats = {"total": len(deals), "updated": 0, "no_change": 0,
+             "no_asin": 0, "fetch_fail": 0, "blocked": False}
+
+    for m in deals:
+        asin = extract_asin(m.amazon_link or "")
+        if not asin:
+            stats["no_asin"] += 1
+            continue
+
+        html = fetch_amazon_page(asin)
+        if html is None:
+            stats["fetch_fail"] += 1
+            time.sleep(delay)
+            continue
+        if is_amazon_blocked(html):
+            stats["blocked"] = True
+            break  # further requests would also be blocked
+
+        r = parse_amazon_product(html)
+        changed = False
+        if not m.rating and r["rating"]:
+            m.rating = r["rating"]; changed = True
+        if not m.review_count and r["reviews"]:
+            m.review_count = r["reviews"]; changed = True
+        if not m.image_url and r["image_url"]:
+            m.image_url = r["image_url"]; changed = True
+        # Price mapping: listPrice → original, current → discount; else current → original
+        if not m.original_price:
+            if r["original_price"]:
+                m.original_price = r["original_price"]; changed = True
+            elif r["price"]:
+                m.original_price = r["price"]; changed = True
+        if not m.discount_price and r["original_price"] and r["price"]:
+            m.discount_price = r["price"]; changed = True
+
+        if changed:
+            m.updated_at = datetime.utcnow()
+            stats["updated"] += 1
+        else:
+            stats["no_change"] += 1
+        time.sleep(delay)
+
+    db.commit()
+    return stats
 
 
 # ── Health ────────────────────────────────────────────
@@ -437,11 +616,11 @@ async def batch_import_merches(request: Request, db: Session = Depends(get_db)):
     if not text:
         raise HTTPException(400, "No data provided")
 
-    imported, errors = _process_import_rows(text, db)
+    imported, errors, imported_ids = _process_import_rows(text, db)
     return JSONResponse({
         "code": 200,
         "success": True,
-        "data": {"imported": imported, "errors": errors},
+        "data": {"imported": imported, "errors": errors, "imported_ids": imported_ids},
     })
 
 
@@ -459,10 +638,19 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         wb = openpyxl.load_workbook(io.BytesIO(contents), read_only=True, data_only=True)
         ws = wb.active
 
-        # Read all rows, convert to tab-separated text
+        # Read all rows, convert to tab-separated text.
+        # Native Excel date/datetime cells (e.g. a user-typed "Deal Date") are
+        # normalized to YYYY-MM-DD so parse_date() can read them.
         rows = []
         for row in ws.iter_rows(values_only=True):
-            cells = [str(c).strip() if c is not None else "" for c in row]
+            cells = []
+            for c in row:
+                if c is None:
+                    cells.append("")
+                elif isinstance(c, (datetime, date)):
+                    cells.append(c.strftime("%Y-%m-%d"))
+                else:
+                    cells.append(str(c).strip())
             # Trim trailing empty cells
             while cells and cells[-1] == "":
                 cells.pop()
@@ -474,12 +662,12 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
             raise HTTPException(400, "No data found in file")
 
         text = "\n".join(rows)
-        imported, errors = _process_import_rows(text, db)
+        imported, errors, imported_ids = _process_import_rows(text, db)
 
         return JSONResponse({
             "code": 200,
             "success": True,
-            "data": {"imported": imported, "errors": errors, "filename": file.filename},
+            "data": {"imported": imported, "errors": errors, "imported_ids": imported_ids, "filename": file.filename},
         })
     except Exception as e:
         raise HTTPException(400, f"Failed to read Excel file: {str(e)}")
@@ -527,6 +715,7 @@ def _process_import_rows(text: str, db: Session):
             col_map.append((f, i))
 
     imported = 0
+    imported_ids = []
     errors = []
 
     for row_num, row in enumerate(data_rows, start=2 if has_header else 1):
@@ -577,10 +766,12 @@ def _process_import_rows(text: str, db: Session):
             m.deal_date = deal_date_val
 
         db.add(m)
+        db.flush()  # assign id
+        imported_ids.append(m.id)
         imported += 1
 
     db.commit()
-    return imported, errors
+    return imported, errors, imported_ids
 
 
 # ═════════════════════════════════════════════════════════
@@ -637,6 +828,63 @@ def delete_subscriber(sub_id: str, db: Session = Depends(get_db)):
     db.delete(sub)
     db.commit()
     return JSONResponse({"code": 200, "success": True})
+
+
+# ── Amazon lookup (auto-fill price / rating / reviews) ──
+
+@app.get("/api/amazon/lookup")
+def amazon_lookup(url: str = Query(""), asin: str = Query("")):
+    """Given an Amazon URL or ASIN, scrape current price / rating / review count."""
+    target = (url or asin).strip()
+    if not target:
+        raise HTTPException(400, "Provide ?url= or ?asin=")
+    asin_val = extract_asin(target)
+    if not asin_val:
+        raise HTTPException(400, "Could not extract an ASIN from input")
+
+    html = fetch_amazon_page(asin_val)
+    if html is None:
+        raise HTTPException(502, "Failed to fetch Amazon page (curl unavailable or network error)")
+    if is_amazon_blocked(html):
+        raise HTTPException(429, "Amazon bot check triggered — try again later")
+
+    r = parse_amazon_product(html)
+    if not any([r["price"], r["rating"], r["reviews"]]):
+        raise HTTPException(502, "Could not parse product data (page structure may have changed)")
+
+    r["asin"] = asin_val
+    r["amazon_link"] = "https://www.amazon.com/dp/" + asin_val
+    return JSONResponse({"code": 200, "success": True, "data": r})
+
+
+@app.post("/api/amazon/enrich")
+def amazon_enrich(data: EnrichRequest, db: Session = Depends(get_db)):
+    """Batch-fill missing price/rating/reviews/image on deals.
+
+    Body: {"ids": [...]}  → enrich only those deals.
+    Body: {"ids": []}     → auto-find active deals with a link but missing data.
+    """
+    ids = data.ids or []
+    if not ids:
+        q = (
+            db.query(Merch)
+            .filter(Merch.status == 1, Merch.amazon_link != "")
+            .filter(or_(
+                Merch.rating == "",
+                Merch.review_count == "",
+                Merch.original_price == "",
+                Merch.image_url == "",
+            ))
+        )
+        ids = [m.id for m in q.limit(50).all()]
+        if not ids:
+            return JSONResponse({"code": 200, "success": True, "data": {
+                "total": 0, "updated": 0, "no_change": 0, "no_asin": 0,
+                "fetch_fail": 0, "blocked": False, "message": "没有需要补全的 deal",
+            }})
+
+    stats = enrich_deals(db, ids)
+    return JSONResponse({"code": 200, "success": True, "data": stats})
 
 
 # ═════════════════════════════════════════════════════════
