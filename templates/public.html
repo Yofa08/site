@@ -108,6 +108,11 @@
     font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 10px;
   }
   .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .section-divider .date-suffix {
+    background: var(--primary); color: #fff; padding: 2px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; letter-spacing: .3px; flex-shrink: 0;
+  }
+  .section-divider .group-count { font-size: 12px; color: var(--sub); font-weight: 400; flex-shrink: 0; }
 
   /* ── Deal Grid ── */
   .grid {
@@ -209,18 +214,10 @@
   </div>
 </header>
 
-<nav class="date-nav">
-  {% for dn in date_nav %}
-  <a href="/?date={{ dn.iso }}" class="{% if dn.iso == selected_date %}active{% endif %}">
-    {{ dn.label }}{% if dn.suffix %} <span class="date-suffix">({{ dn.suffix }})</span>{% endif %}
-  </a>
-  {% endfor %}
-</nav>
-
 <nav class="cat-nav">
-  <a href="/?date={{ selected_date }}" class="active">All</a>
+  <a href="/" class="active">All</a>
   {% for c in categories %}
-  <a href="?category={{ c.id }}&date={{ selected_date }}">{{ c.name }}</a>
+  <a href="?category={{ c.id }}">{{ c.name }}</a>
   {% endfor %}
 </nav>
 
@@ -275,11 +272,15 @@
 </div>
 {% endif %}
 
-<!-- ═══ ALL DEALS ═══ -->
-{% if deals %}
-<div class="section-divider">📦 All Deals</div>
+<!-- ═══ ALL DEALS (grouped by date, newest first) ═══ -->
+{% for group in date_groups %}
+<div class="section-divider"{% if group.iso %} id="date-{{ group.iso }}"{% endif %}>
+  🗓 {{ group.label }}
+  {% if group.suffix %}<span class="date-suffix">{{ group.suffix }}</span>{% endif %}
+  <span class="group-count">{{ group.deals|length }} deals</span>
+</div>
 <div class="grid">
-  {% for d in deals %}
+  {% for d in group.deals %}
   <div class="card">
     <div class="card-img-wrap">
       {% if d.is_hot %}<span class="card-hot-badge">HOT</span>{% endif %}
@@ -335,7 +336,9 @@
   </div>
   {% endfor %}
 </div>
-{% elif not featured %}
+{% endfor %}
+
+{% if not date_groups and not featured %}
 <div class="empty"><div class="icon">📦</div><p>No deals yet. Check back soon!</p></div>
 {% endif %}
 
