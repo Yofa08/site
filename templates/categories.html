@@ -3,71 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Categories — Deal Manager</title>
-<style>
-  :root {
-    --bg: #f0f2f5; --card: #fff; --primary: #4361ee; --text: #1a1a2e; --sub: #6b7280;
-    --border: #e5e7eb; --red: #ef4444; --green: #10b981; --radius: 8px; --shadow: 0 1px 3px rgba(0,0,0,.08);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
-  nav { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 24px; }
-  nav a { text-decoration: none; color: var(--sub); font-weight: 500; font-size: 14px; }
-  nav a.active { color: var(--primary); }
-  nav .brand { font-weight: 700; font-size: 16px; color: var(--text); margin-right: auto; }
-  .container { max-width: 800px; margin: 0 auto; padding: 24px; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .header h1 { font-size: 22px; font-weight: 700; }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: .15s; }
-  .btn-primary { background: var(--primary); color: #fff; }
-  .btn-primary:hover { opacity: .9; }
-  .btn-ghost { background: none; color: var(--sub); border: 1px solid var(--border); }
-  .btn-ghost:hover { background: #f9fafb; }
-  .btn-sm { padding: 4px 10px; font-size: 12px; }
-  .btn-danger { color: var(--red); border-color: var(--red); background: none; }
-  .btn-danger:hover { background: #fef2f2; }
-  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 12px 16px; background: #fafbfc; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--sub); font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
-  td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #fafbfc; }
-  .empty { text-align: center; padding: 60px 20px; color: var(--sub); }
-  .toast { position: fixed; top: 20px; right: 20px; z-index: 200; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #fff; transform: translateX(120%); transition: .3s; }
-  .toast.show { transform: translateX(0); }
-  .toast-success { background: var(--green); }
-  .toast-error { background: var(--red); }
-  .quick-add { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; padding: 16px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
-  .quick-add input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; flex: 1; }
-  .quick-add input:focus { outline: none; border-color: var(--primary); }
-  .edit-row input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; width: 100%; }
-  .edit-row input:focus { outline: none; border-color: var(--primary); }
-  .edit-row select { padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; }
-</style>
+<title>Categories - Deal Manager</title>
+<link rel="stylesheet" href="/static/css/admin.css">
 </head>
 <body>
 
-<nav>
+<nav class="admin-topbar">
   <span class="brand">🏷️ Deal Manager</span>
   <a href="/admin">Deals</a>
   <a href="/admin/categories" class="active">Categories</a>
   <a href="/admin/settings">Settings</a>
-  <a href="/" target="_blank">Preview Store →</a>
+  <a href="/" target="_blank" rel="noopener noreferrer">Preview Store →</a>
 </nav>
 
-<div class="container">
+<div class="container container-narrow">
   <div class="header">
     <h1>📂 Categories</h1>
   </div>
 
   <div class="quick-add">
-    <input type="text" id="newCatName" placeholder="Category name — press Enter to add..." 
+    <input type="text" id="newCatName" placeholder="Category name - press Enter to add..."
            onkeydown="if(event.key==='Enter'){addCategory();}">
-    <button class="btn btn-primary" onclick="addCategory()" style="white-space:nowrap;">+ Add</button>
+    <button class="btn btn-primary nowrap" onclick="addCategory()">+ Add</button>
   </div>
 
-  <div class="card">
-    <table>
+  <div class="card table-card">
+    <div class="table-shell">
+    <table class="compact-table">
       <thead>
         <tr>
           <th>Name</th>
@@ -88,11 +50,11 @@
           <td>
             <input type="text" value="{{ c.keywords }}" data-field="keywords" data-id="{{ c.id }}" placeholder="e.g. clothing,dresses,shirts">
           </td>
-          <td style="width:60px;">
-            <input type="number" value="{{ c.sort_order }}" data-field="sort_order" data-id="{{ c.id }}" style="width:60px;">
+          <td>
+            <input type="number" value="{{ c.sort_order }}" data-field="sort_order" data-id="{{ c.id }}" class="sort-input">
           </td>
-          <td style="width:80px;">
-            <select data-field="status" data-id="{{ c.id }}">
+          <td>
+            <select data-field="status" data-id="{{ c.id }}" class="status-select">
               <option value="1" {% if c.status == 1 %}selected{% endif %}>Active</option>
               <option value="0" {% if c.status == 0 %}selected{% endif %}>Inactive</option>
             </select>
@@ -108,12 +70,13 @@
         {% endfor %}
         {% else %}
         <tr><td colspan="6" class="empty">
-          <div style="font-size:48px;margin-bottom:12px;">📂</div>
+          <div class="icon">📂</div>
           No categories yet. Add one above.
         </td></tr>
         {% endif %}
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 
@@ -130,7 +93,7 @@ function showToast(msg, type='success') {
 function addCategory() {
   const name = document.getElementById('newCatName').value.trim();
   if (!name) return showToast('Please enter a category name', 'error');
-  
+
   fetch('/api/categories', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -153,7 +116,7 @@ function saveCat(id) {
     if (el.dataset.field === 'status') val = parseInt(val);
     payload[el.dataset.field] = val;
   });
-  
+
   fetch(`/api/categories/${id}`, {
     method: 'PUT',
     headers: {'Content-Type': 'application/json'},
