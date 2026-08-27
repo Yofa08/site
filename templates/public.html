@@ -3,423 +3,222 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Best Amazon Deals — Updated Every Day">
+<meta name="description" content="{{ settings.get('site_tagline', 'Best Amazon Deals - Updated Every Day') }}">
 <meta property="og:title" content="{{ settings.get('site_title', 'Daily Deals') }}">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://oss.noelsdailydeals.com/000000-spzs/upload/share.png">
-<title>{{ settings.get('site_title', 'Daily Deals') }} — {{ settings.get('site_tagline', 'Best Amazon Deals') }}</title>
-<style>
-  :root {
-    --bg: #f5f7fa; --card: #fff; --primary: #e74c3c; --primary-light: #fce4e4;
-    --text: #2c3e50; --sub: #7f8c8d; --border: #e8ecf1;
-    --radius: 14px; --shadow: 0 2px 12px rgba(0,0,0,.06); --shadow-hover: 0 8px 30px rgba(0,0,0,.1);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
-
-  header {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    color: #fff; padding: 18px 24px; display: flex; align-items: center;
-    justify-content: space-between; flex-wrap: wrap; gap: 14px;
-  }
-  header h1 { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
-  header p { color: #aab; font-size: 13px; margin: 0; }
-  header .header-actions { display: flex; gap: 10px; }
-  .hdr-btn {
-    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
-    border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none;
-    cursor: pointer; border: none; transition: .15s; white-space: nowrap;
-  }
-  .hdr-btn-sheet { background: #0f9d58; color: #fff; }
-  .hdr-btn-sheet:hover { background: #0b8043; }
-  .hdr-btn-sub { background: var(--primary); color: #fff; }
-  .hdr-btn-sub:hover { background: #c0392b; }
-
-  .date-nav {
-    display: flex; gap: 0; justify-content: center; padding: 0 16px; max-width: 1600px; margin: 0 auto;
-  }
-  .date-nav a {
-    display: block; padding: 10px 24px; font-size: 14px; font-weight: 600;
-    text-decoration: none; color: var(--sub); border-bottom: 3px solid transparent;
-    transition: .15s; white-space: nowrap;
-  }
-  .date-nav a:hover { color: var(--text); }
-  .date-nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
-  .date-nav .date-suffix { font-size: 11px; font-weight: 400; margin-left: 4px; color: var(--sub); }
-
-  .cat-nav {
-    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 14px; max-width: 1600px; margin: 0 auto;
-  }
-  .cat-nav a {
-    padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
-    text-decoration: none; color: var(--sub); background: var(--card); border: 1px solid var(--border); transition: .15s;
-  }
-  .cat-nav a:hover, .cat-nav a.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-
-  /* ── Hero Section ── */
-  .hero-section { max-width: 1600px; margin: 0 auto; padding: 20px 16px 0; }
-  .hero-title { font-size: 18px; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-  .hero-title span { background: var(--primary); color: #fff; padding: 2px 10px; border-radius: 4px; font-size: 11px; }
-  .hero-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-  .hero-card {
-    background: var(--card); border-radius: var(--radius); overflow: hidden;
-    box-shadow: var(--shadow); transition: .2s; border: 2px solid transparent; position: relative;
-  }
-  .hero-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: var(--primary-light); }
-  .hero-card-inner { display: flex; }
-  .hero-img { width: 130px; min-height: 130px; object-fit: contain; background: #fafafa; padding: 10px; flex-shrink: 0; border-right: 1px solid var(--border); }
-  .hero-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; min-width: 0; }
-  .hero-cat { font-size: 10px; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 2px; }
-  .hero-name { font-size: 13px; font-weight: 700; line-height: 1.3; margin-bottom: 4px; }
-  .hero-prices { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
-  .hero-price-now { font-size: 18px; font-weight: 800; color: var(--primary); }
-  .hero-price-was { font-size: 11px; color: var(--sub); text-decoration: line-through; }
-  .hero-discount-badge { background: var(--primary-light); color: var(--primary); padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 700; }
-  .hero-code { display: inline-block; background: #fff3cd; color: #856404; padding: 2px 7px; border-radius: 3px; font-family: monospace; font-size: 11px; font-weight: 600; border: 1px dashed #ffc107; margin-bottom: 3px; }
-  .hero-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; font-size: 11px; }
-  .hero-rating { color: var(--sub); }
-  .hero-budget { color: #0f9d58; font-weight: 600; background: #e8f5e9; padding: 1px 7px; border-radius: 3px; }
-  .hero-featured-badge { position: absolute; top: 10px; left: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; }
-
-  /* ── Influencer copy ── */
-  .copy-toggle {
-    width: 100%; padding: 5px 8px; background: none; border: 1px solid var(--border); border-radius: 6px;
-    font-size: 11px; color: var(--sub); cursor: pointer; margin-top: 6px; transition: .15s;
-    display: flex; align-items: center; justify-content: center; gap: 4px;
-  }
-  .copy-toggle:hover { background: #f5f5f5; color: var(--text); }
-  .copy-box { display: none; margin-top: 6px; position: relative; }
-  .copy-box.open { display: block; }
-  .copy-box textarea {
-    width: 100%; padding: 32px 10px 10px; border: 1px solid var(--border); border-radius: 8px;
-    font-family: monospace; font-size: 11px; line-height: 1.5; resize: vertical; background: #fafbfc; color: var(--text);
-    min-height: 180px;
-  }
-  .copy-box .copy-top-btn {
-    position: absolute; top: 6px; right: 6px;
-    padding: 5px 12px; border-radius: 5px; font-size: 11px; font-weight: 700;
-    background: var(--primary); color: #fff; border: none; cursor: pointer; transition: .15s;
-  }
-  .copy-box .copy-top-btn:hover { opacity: .85; }
-  .copy-box .copy-top-btn.copied { background: #10b981; }
-
-  .section-divider {
-    max-width: 1600px; margin: 32px auto 12px; padding: 0 16px;
-    font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 10px;
-  }
-  .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .section-divider .date-suffix {
-    background: var(--primary); color: #fff; padding: 2px 10px; border-radius: 12px;
-    font-size: 11px; font-weight: 700; letter-spacing: .3px; flex-shrink: 0;
-  }
-  .section-divider .group-count { font-size: 12px; color: var(--sub); font-weight: 400; flex-shrink: 0; }
-
-  /* ── Deal Grid ── */
-  .grid {
-    display: grid; gap: 16px;
-    max-width: 1600px; margin: 0 auto; padding: 0 16px 32px;
-    grid-template-columns: 1fr;
-  }
-  @media (min-width: 480px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 768px)  { .grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(4, 1fr); } }
-  @media (min-width: 1280px) { .grid { grid-template-columns: repeat(5, 1fr); } }
-  @media (min-width: 1560px) { .grid { grid-template-columns: repeat(6, 1fr); } }
-  .card {
-    background: var(--card); border-radius: var(--radius); overflow: hidden;
-    box-shadow: var(--shadow); transition: .2s; display: flex; flex-direction: column; position: relative;
-  }
-  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
-  .card-img-wrap { position: relative; background: #fafafa; border-bottom: 1px solid var(--border); }
-  .card-img { width: 100%; height: 190px; object-fit: contain; padding: 14px; }
-  .card-hot-badge { position: absolute; top: 10px; left: 10px; background: var(--primary); color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
-  .card-featured-tag { position: absolute; top: 10px; right: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; }
-
-  .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
-  .card-cat { font-size: 11px; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 3px; }
-  .card-title { font-size: 14px; font-weight: 700; line-height: 1.4; margin-bottom: 8px; }
-
-  .price-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
-  .price-now { font-size: 22px; font-weight: 800; color: var(--primary); }
-  .price-was { font-size: 13px; color: var(--sub); text-decoration: line-through; }
-  .discount-badge { background: var(--primary-light); color: var(--primary); padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
-
-  .code-tag {
-    display: inline-block; background: #fff8e1; color: #856404; padding: 3px 10px; border-radius: 4px;
-    font-family: monospace; font-size: 13px; font-weight: 600; border: 1px dashed #ffc107;
-    cursor: pointer; user-select: all; margin-bottom: 4px;
-  }
-  .code-tag:hover { background: #ffe69c; }
-  .code-tag.copied { background: #d4edda; color: #155724; border-color: #28a745; }
-
-  .detail-row { font-size: 12px; color: var(--sub); margin-bottom: 6px; }
-  .rating { font-size: 12px; color: var(--sub); margin-bottom: 4px; }
-
-  .card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-  .budget-tag { font-size: 12px; color: #0f9d58; font-weight: 700; background: #e8f5e9; padding: 3px 10px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; }
-  .end-tag { font-size: 11px; color: #e67e22; font-weight: 600; background: #fff3e0; padding: 2px 8px; border-radius: 4px; }
-
-  /* CC info ABOVE title */
-  .creator-row { font-size: 13px; font-weight: 700; color: #6366f1; padding: 3px 8px; border-radius: 4px; margin-bottom: 4px; background: #eef2ff; display: block; }
-  .creator-row-id { font-size: 12px; font-weight: 700; color: #6366f1; padding: 2px 0; }
-  .creator-row-no { font-size: 12px; font-weight: 600; color: #ef4444; font-style: italic; padding: 3px 0; }
-  .hero-creator-row { font-size: 12px; font-weight: 700; color: #6366f1; padding: 2px 7px; border-radius: 3px; margin-bottom: 2px; background: #eef2ff; display: block; }
-  .hero-creator-row-id { font-size: 11px; font-weight: 700; color: #6366f1; padding: 1px 0; }
-  .hero-creator-row-no { font-size: 11px; font-weight: 600; color: #ef4444; font-style: italic; padding: 1px 0; }
-
-  .btn-amazon {
-    display: block; width: 100%; padding: 10px; background: linear-gradient(135deg, #ff9900, #ff6600);
-    color: #fff; text-align: center; text-decoration: none; border-radius: 8px;
-    font-weight: 700; font-size: 14px; margin-top: auto; transition: .15s; border: none; cursor: pointer;
-  }
-  .btn-amazon:hover { opacity: .92; transform: scale(1.01); }
-
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; justify-content: center; align-items: center; }
-  .modal-overlay.open { display: flex; }
-  .modal-box { background: var(--card); border-radius: 16px; padding: 32px; width: 400px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,.3); text-align: center; }
-  .modal-box h3 { font-size: 20px; margin-bottom: 8px; }
-  .modal-box p { color: var(--sub); font-size: 13px; margin-bottom: 20px; }
-  .modal-box input[type=email] { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 12px; }
-  .modal-box input:focus { outline: none; border-color: var(--primary); }
-  .modal-box .btn-full { width: 100%; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; }
-  .modal-box .btn-close { margin-top: 12px; background: none; border: none; color: var(--sub); cursor: pointer; font-size: 13px; }
-  .modal-msg { font-size: 13px; margin-top: 8px; min-height: 20px; }
-
-  footer { text-align: center; padding: 24px; color: var(--sub); font-size: 12px; border-top: 1px solid var(--border); max-width: 1600px; margin: 0 auto; }
-  .empty { text-align: center; padding: 80px 20px; color: var(--sub); max-width: 1600px; margin: 0 auto; }
-  .empty .icon { font-size: 64px; margin-bottom: 16px; }
-
-  @media (max-width: 640px) {
-    header h1 { font-size: 20px; }
-    .hero-img { width: 90px; min-height: 90px; }
-  }
-</style>
+<title>{{ settings.get('site_title', 'Daily Deals') }} - {{ settings.get('site_tagline', 'Best Amazon Deals') }}</title>
+<link rel="stylesheet" href="/static/css/public.css?v=20260827-compact">
 </head>
 <body>
 
-<header>
-  <div class="header-left">
-    <h1>🔥 {{ settings.get('site_title', 'Daily Deals') }}</h1>
-    <p>{{ settings.get('site_tagline', 'Best Amazon Deals — Updated Every Day') }}</p>
-  </div>
-  <div class="header-actions">
-    {% if settings.get('google_sheet_url') %}
-    <a href="{{ settings['google_sheet_url'] }}" target="_blank" class="hdr-btn hdr-btn-sheet">📊 Google Sheet</a>
-    {% endif %}
-    {% if settings.get('subscribe_url') %}
-    <a href="{{ settings['subscribe_url'] }}" target="_blank" class="hdr-btn hdr-btn-sub">📬 Subscribe</a>
-    {% else %}
-    <button class="hdr-btn hdr-btn-sub" onclick="openSubscribeModal()">📬 Subscribe</button>
-    {% endif %}
+<header class="site-header">
+  <div class="site-header__inner">
+    <div class="site-brand">
+      <span class="brand-mark" aria-hidden="true">%</span>
+      <div>
+        <h1>{{ settings.get('site_title', 'Daily Deals') }}</h1>
+        <p>{{ settings.get('site_tagline', 'Best Amazon Deals - Updated Every Day') }}</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      {% if settings.get('google_sheet_url') %}
+      <a href="{{ settings['google_sheet_url'] }}" target="_blank" rel="noopener noreferrer" class="hdr-btn hdr-btn-sheet">Google Sheet</a>
+      {% endif %}
+      {% if settings.get('subscribe_url') %}
+      <a href="{{ settings['subscribe_url'] }}" target="_blank" rel="noopener noreferrer" class="hdr-btn hdr-btn-sub">Subscribe</a>
+      {% else %}
+      <button type="button" class="hdr-btn hdr-btn-sub" data-subscribe-open>Subscribe</button>
+      {% endif %}
+    </div>
   </div>
 </header>
 
-<nav class="cat-nav">
-  <a href="/" class="active">All</a>
+<nav class="cat-nav" aria-label="Deal categories">
+  <a href="/" class="{% if not selected_category_id %}active{% endif %}">All</a>
   {% for c in categories %}
-  <a href="?category={{ c.id }}">{{ c.name }}</a>
+  <a href="/?category={{ c.id }}" class="{% if selected_category_id == c.id %}active{% endif %}">{{ c.name }}</a>
   {% endfor %}
 </nav>
 
-<!-- ═══ HERO ═══ -->
 {% if featured %}
-<div class="hero-section">
-  <div class="hero-title">⭐ Today's Featured <span>PICKS</span></div>
+<section class="hero-section" aria-labelledby="featured-heading">
+  <h2 class="hero-title" id="featured-heading">Today's Featured <span>Picks</span></h2>
   <div class="hero-grid">
     {% for d in featured %}
-    <div class="hero-card">
-      <span class="hero-featured-badge">FEATURED</span>
+    <article class="hero-card">
+      <span class="hero-featured-badge">Featured</span>
       <div class="hero-card-inner">
         {% if d.image_url %}
         <img src="{{ d.image_url }}" class="hero-img" alt="{{ d.name }}" loading="lazy" onerror="this.style.display='none'">
         {% endif %}
         <div class="hero-body">
           {% if d.category_name %}<div class="hero-cat">{{ d.category_name }}</div>{% endif %}
-
-          {% if d.creator_name %}
-          <div class="hero-creator-row">CC：{{ d.creator_name }}</div>
-          {% if d.creator_id %}<div class="hero-creator-row-id">CC ID：{{ d.creator_id }}</div>{% endif %}
-          {% else %}
-          <div class="hero-creator-row-no">⚠ No commission program assigned</div>
+          <h3 class="hero-name">{{ d.name }}</h3>
+          {% if d.creator_name or d.creator_id %}
+          <div class="creator-meta">
+            {% if d.creator_name %}<span class="creator-meta__title">CC Title: {{ d.creator_name }}</span>{% endif %}
+            {% if d.creator_id %}<span class="creator-meta__id">CC ID: {{ d.creator_id }}</span>{% endif %}
+          </div>
           {% endif %}
-
-          <div class="hero-name">{{ d.name }}</div>
+          {% if d.discount_price or d.original_price or d.total_discount %}
           <div class="hero-prices">
             {% if d.discount_price %}<span class="hero-price-now">${{ d.discount_price }}</span>{% endif %}
             {% if d.original_price %}<span class="hero-price-was">${{ d.original_price }}</span>{% endif %}
             {% if d.total_discount %}<span class="hero-discount-badge">{{ d.total_discount }} OFF</span>{% endif %}
           </div>
-          {% if d.code %}<div><span class="hero-code" onclick="copyCode(this, '{{ d.code }}')">{{ d.code }} 📋</span></div>{% endif %}
+          {% endif %}
+          {% if d.code %}
+          <button type="button" class="hero-code" data-copy-code="{{ d.code }}">{{ d.code }} Copy</button>
+          {% endif %}
+          {% if d.rating or d.budget %}
           <div class="hero-meta">
-            {% if d.rating %}<span class="hero-rating">⭐ {{ d.rating }}{% if d.review_count %} ({{ d.review_count }}){% endif %}</span>{% endif %}
-            {% if d.budget %}<span class="hero-budget">💰 {{ d.budget }}</span>{% endif %}
+            {% if d.rating %}<span>{{ d.rating }} stars{% if d.review_count %} ({{ d.review_count }}){% endif %}</span>{% endif %}
+            {% if d.budget %}<span class="orders-tag">Orders {{ d.budget }}</span>{% endif %}
           </div>
+          {% endif %}
+          {% if d.start_time or d.end_time %}
+          <div class="deal-time-row hero-time-row">
+            {% if d.start_time %}<span class="time-tag">Start {{ d.start_time }}</span>{% endif %}
+            {% if d.start_time and d.end_time %}<span class="time-separator">/</span>{% endif %}
+            {% if d.end_time %}<span class="end-tag">Ends {{ d.end_time }}</span>{% endif %}
+          </div>
+          {% endif %}
+          {% if d.influencer_copy %}
+          <div class="creator-copy">
+            <button type="button" class="copy-toggle" data-copy-toggle data-copy-target="hero-copy-{{ d.id }}" aria-expanded="false">Copy for Influencer</button>
+            <div class="copy-box" id="hero-copy-{{ d.id }}">
+              <button type="button" class="copy-top-btn" data-copy-text-id="hero-copy-text-{{ d.id }}">Copy Text</button>
+              <textarea readonly rows="8" id="hero-copy-text-{{ d.id }}">{{ d.influencer_copy }}</textarea>
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
-
-      {% if d.influencer_copy %}
-      <div style="padding:0 14px 10px;">
-        <button class="copy-toggle" onclick="toggleCopy(this)">📋 Copy for Influencer</button>
-        <div class="copy-box">
-          <button class="copy-top-btn" onclick="copyInfluencerText(this)" data-id="hero-{{ d.id }}">Copy</button>
-          <textarea readonly rows="10" id="infotext-hero-{{ d.id }}">{{ d.influencer_copy }}</textarea>
-        </div>
-      </div>
-      {% endif %}
-    </div>
+    </article>
     {% endfor %}
   </div>
-</div>
+</section>
 {% endif %}
 
-<!-- ═══ ALL DEALS (grouped by date, newest first) ═══ -->
-{% for group in date_groups %}
-<div class="section-divider"{% if group.iso %} id="date-{{ group.iso }}"{% endif %}>
-  🗓 {{ group.label }}
-  {% if group.suffix %}<span class="date-suffix">{{ group.suffix }}</span>{% endif %}
-  <span class="group-count">{{ group.deals|length }} deals</span>
-</div>
-<div class="grid">
-  {% for d in group.deals %}
-  <div class="card">
-    <div class="card-img-wrap">
-      {% if d.is_hot %}<span class="card-hot-badge">HOT</span>{% endif %}
-      {% if d.is_featured %}<span class="card-featured-tag">FEATURED</span>{% endif %}
-      {% if d.image_url %}
-      <img src="{{ d.image_url }}" class="card-img" alt="{{ d.name }}" loading="lazy" onerror="this.style.display='none'">
-      {% endif %}
+<main class="deals-section">
+  {% for group in date_groups %}
+  <section aria-labelledby="date-{{ group.iso or loop.index }}">
+    <div class="section-divider" id="date-{{ group.iso or loop.index }}">
+      <span>{{ group.label }}</span>
+      {% if group.suffix %}<span class="date-suffix">{{ group.suffix }}</span>{% endif %}
+      <span class="group-count">{{ group.deals|length }} deals</span>
     </div>
-    <div class="card-body">
-      {% if d.category_name %}<div class="card-cat">{{ d.category_name }}</div>{% endif %}
+    <div class="grid">
+      {% for d in group.deals %}
+      <article class="card">
+        <div class="card-image-slot">
+          <div class="card-img-wrap{% if not d.image_url %} card-img-wrap--empty{% endif %}">
+            {% if d.is_hot %}<span class="card-hot-badge">Hot</span>{% endif %}
+            {% if d.is_featured %}<span class="card-featured-tag">Featured</span>{% endif %}
+            {% if d.image_url %}
+            <img src="{{ d.image_url }}" class="card-img" alt="{{ d.name }}" loading="lazy" onerror="this.style.display='none'">
+            {% else %}
+            <div class="card-img-placeholder" aria-hidden="true"></div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="card-cat-slot">
+            {% if d.category_name %}<div class="card-cat">{{ d.category_name }}</div>{% endif %}
+          </div>
 
-      {% if d.creator_name %}
-      <div class="creator-row">CC：{{ d.creator_name }}</div>
-      {% if d.creator_id %}<div class="creator-row-id">CC ID：{{ d.creator_id }}</div>{% endif %}
-      {% else %}
-      <div class="creator-row-no">⚠ No commission program assigned</div>
-      {% endif %}
+          <div class="card-title-slot">
+            <h3 class="card-title">{{ d.name }}</h3>
+          </div>
 
-      <div class="card-title">{{ d.name }}</div>
+          <div class="creator-slot">
+            {% if d.creator_name or d.creator_id %}
+            <div class="creator-meta">
+              {% if d.creator_name %}<span class="creator-meta__title">CC Title: {{ d.creator_name }}</span>{% endif %}
+              {% if d.creator_id %}<span class="creator-meta__id">CC ID: {{ d.creator_id }}</span>{% endif %}
+            </div>
+            {% endif %}
+          </div>
 
-      <div class="price-row">
-        {% if d.discount_price %}<span class="price-now">${{ d.discount_price }}</span>{% endif %}
-        {% if d.original_price %}<span class="price-was">${{ d.original_price }}</span>{% endif %}
-        {% if d.total_discount %}<span class="discount-badge">{{ d.total_discount }} OFF</span>{% endif %}
-      </div>
+          <div class="price-slot">
+            {% if d.discount_price or d.original_price or d.total_discount %}
+            <div class="price-row">
+              {% if d.discount_price %}<span class="price-now">${{ d.discount_price }}</span>{% endif %}
+              {% if d.original_price %}<span class="price-was">${{ d.original_price }}</span>{% endif %}
+              {% if d.total_discount %}<span class="discount-badge">{{ d.total_discount }} OFF</span>{% endif %}
+            </div>
+            {% endif %}
+          </div>
 
-      {% if d.discount_detail %}<div class="detail-row">{{ d.discount_detail }}</div>{% endif %}
-      {% if d.code %}<div><span class="code-tag" onclick="copyCode(this, '{{ d.code }}')">{{ d.code }} 📋</span></div>{% endif %}
+          <div class="detail-slot">
+            {% if d.discount_detail %}<div class="detail-row">{{ d.discount_detail }}</div>{% endif %}
+            {% if d.code %}
+            <button type="button" class="code-tag" data-copy-code="{{ d.code }}">{{ d.code }} Copy</button>
+            {% endif %}
+          </div>
 
-      {% if d.budget or d.end_time %}
-      <div class="card-meta">
-        {% if d.budget %}<span class="budget-tag">💰 Budget: ${{ d.budget }}</span>{% endif %}
-        {% if d.end_time %}<span class="end-tag">⏰ Ends {{ d.end_time }}</span>{% endif %}
-      </div>
-      {% endif %}
+          <div class="metrics-slot">
+            {% if d.rating or d.budget %}
+            <div class="card-meta">
+              {% if d.rating %}<span class="rating">{{ d.rating }} stars{% if d.review_count %} · {{ d.review_count }} reviews{% endif %}</span>{% endif %}
+              {% if d.budget %}<span class="orders-tag">Orders {{ d.budget }}</span>{% endif %}
+            </div>
+            {% endif %}
+          </div>
 
-      <div class="rating">
-        {% if d.rating %}⭐ {{ d.rating }}{% if d.review_count %} &nbsp;{{ d.review_count }} reviews{% endif %}{% endif %}
-      </div>
+          <div class="time-slot">
+            {% if d.start_time or d.end_time %}
+            <div class="deal-time-row">
+              {% if d.start_time %}<span class="time-tag">Start {{ d.start_time }}</span>{% endif %}
+              {% if d.start_time and d.end_time %}<span class="time-separator">/</span>{% endif %}
+              {% if d.end_time %}<span class="end-tag">Ends {{ d.end_time }}</span>{% endif %}
+            </div>
+            {% endif %}
+          </div>
 
-      {% if d.amazon_link %}
-      <a href="{{ d.amazon_link }}" target="_blank" rel="nofollow" class="btn-amazon">🛒 View on Amazon</a>
-      {% endif %}
+          <div class="copy-slot">
+            {% if d.influencer_copy %}
+            <div class="creator-copy">
+              <button type="button" class="copy-toggle" data-copy-toggle data-copy-target="copy-{{ d.id }}" aria-expanded="false">Copy for Influencer</button>
+              <div class="copy-box" id="copy-{{ d.id }}">
+                <button type="button" class="copy-top-btn" data-copy-text-id="copy-text-{{ d.id }}">Copy Text</button>
+                <textarea readonly rows="8" id="copy-text-{{ d.id }}">{{ d.influencer_copy }}</textarea>
+              </div>
+            </div>
+            {% endif %}
+          </div>
 
-      {% if d.influencer_copy %}
-      <button class="copy-toggle" onclick="toggleCopy(this)">📋 Copy for Influencer</button>
-      <div class="copy-box">
-        <button class="copy-top-btn" onclick="copyInfluencerText(this)" data-id="{{ d.id }}">Copy</button>
-        <textarea readonly rows="10" id="infotext-{{ d.id }}">{{ d.influencer_copy }}</textarea>
-      </div>
-      {% endif %}
+          <div class="action-slot">
+            {% if d.amazon_link %}
+            <a href="{{ d.amazon_link }}" target="_blank" rel="nofollow noopener noreferrer sponsored" class="btn-amazon">View on Amazon</a>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
     </div>
-  </div>
+  </section>
   {% endfor %}
-</div>
-{% endfor %}
+</main>
 
 {% if not date_groups and not featured %}
-<div class="empty"><div class="icon">📦</div><p>No deals yet. Check back soon!</p></div>
+<div class="empty"><div class="icon">%</div><p>No deals yet. Check back soon!</p></div>
 {% endif %}
 
-<footer>© {{ request.url.hostname }} — As an Amazon Associate we earn from qualifying purchases.</footer>
+<footer>© {{ request.url.hostname }} - As an Amazon Associate we earn from qualifying purchases.</footer>
 
-<div class="modal-overlay" id="subscribeModal">
-  <div class="modal-box">
-    <h3>📬 Get Daily Deals</h3>
+<div class="modal-overlay" id="subscribeModal" aria-hidden="true">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="subscribeTitle">
+    <h3 id="subscribeTitle">Get Daily Deals</h3>
     <p>Subscribe to receive the best Amazon deals in your inbox every day.</p>
-    <input type="email" id="subEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter'){doSubscribe();}">
-    <button class="btn-full hdr-btn-sub" onclick="doSubscribe()">Subscribe Now</button>
-    <div class="modal-msg" id="subMsg"></div>
-    <button class="btn-close" onclick="closeSubscribeModal()">No thanks</button>
+    <input type="email" id="subEmail" placeholder="your@email.com" autocomplete="email">
+    <button type="button" class="btn-full hdr-btn hdr-btn-sub" data-subscribe-submit>Subscribe Now</button>
+    <div class="modal-msg" id="subMsg" aria-live="polite"></div>
+    <button type="button" class="btn-close" data-subscribe-close>No thanks</button>
   </div>
 </div>
 
-<script>
-function copyCode(el, code) {
-  navigator.clipboard.writeText(code).then(() => {
-    el.textContent = code + ' ✓ Copied!';
-    el.classList.add('copied');
-    setTimeout(() => { el.textContent = code + ' 📋'; el.classList.remove('copied'); }, 2000);
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = code; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    el.textContent = code + ' ✓ Copied!';
-    setTimeout(() => { el.textContent = code + ' 📋'; }, 2000);
-  });
-}
-
-function toggleCopy(btn) {
-  const box = btn.nextElementSibling;
-  box.classList.toggle('open');
-  btn.textContent = box.classList.contains('open') ? '📋 Hide' : '📋 Copy for Influencer';
-}
-
-function copyInfluencerText(btn) {
-  const id = btn.dataset.id;
-  const ta = document.getElementById('infotext-' + id);
-  if (!ta) return;
-  navigator.clipboard.writeText(ta.value).then(() => {
-    btn.textContent = '✓ Copied!';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-  }).catch(() => {
-    ta.select(); document.execCommand('copy');
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
-  });
-}
-
-function openSubscribeModal() {
-  document.getElementById('subEmail').value = '';
-  document.getElementById('subMsg').textContent = '';
-  document.getElementById('subscribeModal').classList.add('open');
-}
-function closeSubscribeModal() { document.getElementById('subscribeModal').classList.remove('open'); }
-function doSubscribe() {
-  const email = document.getElementById('subEmail').value.trim();
-  const msg = document.getElementById('subMsg');
-  if (!email || !email.includes('@')) { msg.textContent = 'Please enter a valid email'; msg.style.color = '#ef4444'; return; }
-  fetch('/api/subscribe', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email}) })
-    .then(r => r.json())
-    .then(res => {
-      msg.textContent = res.message || (res.success ? 'Subscribed!' : 'Error');
-      msg.style.color = res.success ? '#10b981' : '#ef4444';
-      if (res.success) { document.getElementById('subEmail').value = ''; setTimeout(closeSubscribeModal, 2000); }
-    })
-    .catch(() => { msg.textContent = 'Network error'; msg.style.color = '#ef4444'; });
-}
-document.getElementById('subscribeModal').addEventListener('click', function(e) { if (e.target === this) closeSubscribeModal(); });
-
-const params = new URLSearchParams(window.location.search);
-const activeCat = params.get('category');
-if (activeCat) {
-  document.querySelectorAll('.cat-nav a').forEach(a => {
-    a.classList.remove('active');
-    if (a.href.includes('category=' + activeCat)) a.classList.add('active');
-  });
-}
-</script>
+<script src="/static/js/public.js?v=20260827-compact" defer></script>
 </body>
 </html>
