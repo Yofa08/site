@@ -272,12 +272,21 @@ def extract_asin(text: str) -> Optional[str]:
 
 def fetch_amazon_page(asin: str) -> Optional[str]:
     """Download the product page via curl (its TLS fingerprint evades Amazon's
-    bot check, which Python's urllib/requests reliably triggers)."""
+    bot check, which Python's urllib/requests reliably triggers).
+
+    Timeouts are deliberately tight (connect 8s, total 10s) so the synchronous
+    /api/amazon/lookup request always returns well under any gateway/nginx
+    timeout. If Amazon hangs (JS challenge on datacenter IPs), we fail fast
+    with a clean JSON error instead of letting the gateway cut us off and
+    return an HTML 502/504 page (which the frontend can't parse as JSON).
+    """
     if shutil.which("curl") is None:
         return None
     url = "https://www.amazon.com/dp/" + asin
     cmd = [
-        "curl", "-s", "-L", "-m", "25",
+        "curl", "-s", "-L",
+        "--connect-timeout", "8",
+        "-m", "10",
         "-A", AMZ_UA,
         "-H", "Accept-Language: en-US,en;q=0.9",
         "-H", "Cookie: " + AMZ_COOKIE,
@@ -289,7 +298,7 @@ def fetch_amazon_page(asin: str) -> Optional[str]:
         cmd += ["--proxy", proxy]
     cmd.append(url)
     try:
-        out = subprocess.run(cmd, capture_output=True, timeout=35)
+        out = subprocess.run(cmd, capture_output=True, timeout=15)
         html = out.stdout.decode("utf-8", errors="replace")
         return html or None
     except (subprocess.TimeoutExpired, Exception):
@@ -297,7 +306,9 @@ def fetch_amazon_page(asin: str) -> Optional[str]:
 
 
 def is_amazon_blocked(html: str) -> bool:
-    return bool(re.search(r"(Robot Check|Enter the characters|captcha)", html, re.I))
+    return bool(re.search(
+        r"(Robot Check|Enter the characters|not a robot|captcha|api-services-support)",
+        html, re.I))
 
 
 def parse_amazon_product(html: str) -> dict:
