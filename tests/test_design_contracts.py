@@ -19,6 +19,16 @@ class DesignContractsTest(unittest.TestCase):
         self.assertIn('/static/js/public.js', html)
         self.assertNotIn("<style>", html)
 
+    def test_public_images_use_uniform_box_and_fresh_asset_version(self):
+        html = self.read_template("public.html")
+        public_css = (STATIC / "css/public.css").read_text(encoding="utf-8")
+
+        self.assertIn('/static/css/public.css?v=20260828-uniform-images', html)
+        self.assertNotIn('/static/css/public.css?v=20260827-compact', html)
+        self.assertIn('height: 260px;', public_css)
+        self.assertIn('max-height: 260px;', public_css)
+        self.assertIn('object-fit: contain;', public_css)
+
     def test_public_page_keeps_creator_and_influencer_copy_workflow(self):
         html = self.read_template("public.html")
 
