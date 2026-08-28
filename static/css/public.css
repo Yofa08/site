@@ -498,7 +498,7 @@ footer,
   border-bottom: 1px solid var(--line);
   align-items: center;
   display: flex;
-  min-height: 150px;
+  min-height: 260px;
   justify-content: center;
   position: relative;
 }
